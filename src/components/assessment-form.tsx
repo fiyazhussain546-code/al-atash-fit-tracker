@@ -8,7 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
+import { PaymentStep } from "@/components/payment-step";
 import { submitAssessment } from "@/lib/assessment.functions";
+
 import {
   getSections,
   calculateBmi,
@@ -265,6 +267,7 @@ export function AssessmentForm({ type }: { type: AssessmentType }) {
             Please save this ID. Our team will contact you on the number you provided.
           </p>
         </div>
+        <PaymentStep submissionId={result.submissionId} />
         <div className="mt-6 flex justify-center gap-3">
           <Button asChild variant="outline">
             <Link to="/">Back to home</Link>
@@ -274,6 +277,7 @@ export function AssessmentForm({ type }: { type: AssessmentType }) {
       </div>
     );
   }
+
 
   return (
     <div ref={topRef} className="mx-auto max-w-4xl px-4 pb-24 pt-6 sm:px-6">
