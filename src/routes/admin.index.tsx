@@ -1,13 +1,40 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { Download, Loader2, LogOut, RefreshCw, Search, X } from "lucide-react";
+import {
+  Check,
+  Download,
+  ExternalLink,
+  Loader2,
+  LogOut,
+  RefreshCw,
+  Search,
+  Settings2,
+  X,
+} from "lucide-react";
 import { Logo } from "@/components/brand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { adminLogin, adminListSubmissions, adminAuthStatus, adminSetupPassword } from "@/lib/admin.functions";
+import {
+  adminLogin,
+  adminListSubmissions,
+  adminAuthStatus,
+  adminSetupPassword,
+  adminGetPackages,
+  adminSavePackages,
+  adminReviewPayment,
+  adminProofUrl,
+} from "@/lib/admin.functions";
 import { allFields, type AssessmentType } from "@/lib/assessment-schema";
+import {
+  DEFAULT_PACKAGE_SETTINGS,
+  PAYMENT_STATUSES,
+  formatPrice,
+  type DietPackage,
+  type PackageSettings,
+} from "@/lib/packages";
 
 export const Route = createFileRoute("/admin/")({
   head: () => ({
@@ -32,10 +59,38 @@ interface Submission {
   city: string;
   age: string;
   bmi: string;
+  packageKey: string;
+  paymentStatus: string;
+  paymentReference: string;
+  paymentNote: string;
+  paymentProofPath: string;
+  paymentSubmittedAt: string;
+  paymentReviewedAt: string;
+  paymentReviewNote: string;
   data: Record<string, string | string[] | boolean>;
 }
 
 const TOKEN_KEY = "alatash_admin_token";
+
+const statusClass: Record<string, string> = {
+  Pending: "bg-secondary text-muted-foreground",
+  "Proof Submitted": "bg-accent text-accent-foreground",
+  Verified: "bg-brand/15 text-brand-dark",
+  Rejected: "bg-destructive/10 text-destructive",
+};
+
+function StatusBadge({ status }: { status: string }) {
+  return (
+    <span
+      className={cn(
+        "inline-block whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold",
+        statusClass[status] ?? "bg-secondary text-muted-foreground",
+      )}
+    >
+      {status}
+    </span>
+  );
+}
 
 function labelFor(type: string, fieldId: string) {
   const t = (type.toLowerCase() as AssessmentType) || "male";
@@ -61,12 +116,25 @@ function AdminPage() {
   const [loadError, setLoadError] = useState("");
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState("All");
+  const [statusFilter, setStatusFilter] = useState("All");
   const [selected, setSelected] = useState<Submission | null>(null);
+  const [reviewNote, setReviewNote] = useState("");
+  const [reviewError, setReviewError] = useState("");
+  const [reviewBusy, setReviewBusy] = useState(false);
+  const [proofBusy, setProofBusy] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settings, setSettings] = useState<PackageSettings>(DEFAULT_PACKAGE_SETTINGS);
+  const [settingsMsg, setSettingsMsg] = useState("");
+  const [settingsBusy, setSettingsBusy] = useState(false);
 
   const login = useServerFn(adminLogin);
   const list = useServerFn(adminListSubmissions);
   const status = useServerFn(adminAuthStatus);
   const setup = useServerFn(adminSetupPassword);
+  const getPackages = useServerFn(adminGetPackages);
+  const savePackages = useServerFn(adminSavePackages);
+  const reviewPayment = useServerFn(adminReviewPayment);
+  const proofUrl = useServerFn(adminProofUrl);
 
   useEffect(() => {
     const saved = sessionStorage.getItem(TOKEN_KEY);
@@ -114,6 +182,25 @@ function AdminPage() {
   useEffect(() => {
     if (token) void load(token);
   }, [token, load]);
+
+  useEffect(() => {
+    if (!token) return;
+    let active = true;
+    void (async () => {
+      try {
+        const res = await getPackages({ data: { token } });
+        if (active && res.ok) setSettings(res.settings as PackageSettings);
+      } catch {
+        /* keep defaults */
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [token, getPackages]);
+
+  const packageName = (key: string) =>
+    settings.packages.find((p) => p.key === key)?.name ?? (key || "—");
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -164,23 +251,102 @@ function AdminPage() {
     }
   }
 
+  async function handleReview(decision: "Verified" | "Rejected") {
+    if (!token || !selected) return;
+    setReviewBusy(true);
+    setReviewError("");
+    try {
+      const res = await reviewPayment({
+        data: { token, recordId: selected.recordId, decision, note: reviewNote },
+      });
+      if (!res.ok) {
+        setReviewError(res.error);
+        return;
+      }
+      const reviewedAt = new Date().toISOString();
+      setSubmissions((prev) =>
+        prev.map((s) =>
+          s.recordId === selected.recordId
+            ? { ...s, paymentStatus: decision, paymentReviewNote: reviewNote, paymentReviewedAt: reviewedAt }
+            : s,
+        ),
+      );
+      setSelected((s) =>
+        s ? { ...s, paymentStatus: decision, paymentReviewNote: reviewNote, paymentReviewedAt: reviewedAt } : s,
+      );
+      setReviewNote("");
+    } catch (err) {
+      setReviewError(err instanceof Error ? err.message : "Could not update payment.");
+    } finally {
+      setReviewBusy(false);
+    }
+  }
+
+  async function openProof() {
+    if (!token || !selected?.paymentProofPath) return;
+    setProofBusy(true);
+    setReviewError("");
+    try {
+      const res = await proofUrl({ data: { token, path: selected.paymentProofPath } });
+      if (res.ok && res.url) window.open(res.url, "_blank", "noopener");
+      else setReviewError(res.error || "Could not open proof.");
+    } catch (err) {
+      setReviewError(err instanceof Error ? err.message : "Could not open proof.");
+    } finally {
+      setProofBusy(false);
+    }
+  }
+
+  async function handleSaveSettings() {
+    if (!token) return;
+    setSettingsBusy(true);
+    setSettingsMsg("");
+    try {
+      const res = await savePackages({ data: { token, settings } });
+      setSettingsMsg(res.ok ? "Package settings saved." : res.error);
+    } catch (err) {
+      setSettingsMsg(err instanceof Error ? err.message : "Could not save packages.");
+    } finally {
+      setSettingsBusy(false);
+    }
+  }
+
+  function updatePackage(index: number, patch: Partial<DietPackage>) {
+    setSettings((prev) => ({
+      ...prev,
+      packages: prev.packages.map((p, i) => (i === index ? { ...p, ...patch } : p)),
+    }));
+  }
+
   const filtered = submissions.filter((s) => {
     if (typeFilter !== "All" && s.type !== typeFilter) return false;
+    if (statusFilter !== "All" && (s.paymentStatus || "Pending") !== statusFilter) return false;
     if (!query.trim()) return true;
     const q = query.toLowerCase();
-    return [s.submissionId, s.name, s.phone, s.city, s.type].some((v) => v.toLowerCase().includes(q));
+    return [s.submissionId, s.name, s.phone, s.city, s.type].some((v) => (v ?? "").toLowerCase().includes(q));
   });
 
   function exportCsv() {
     const keys = new Set<string>();
     filtered.forEach((s) => Object.keys(s.data).forEach((k) => keys.add(k)));
-    const cols = ["Submission ID", "Type", "Submitted At", ...Array.from(keys)];
+    const cols = [
+      "Submission ID",
+      "Type",
+      "Submitted At",
+      "Package",
+      "Payment Status",
+      "Payment Reference",
+      ...Array.from(keys),
+    ];
     const esc = (v: string) => `"${v.replace(/"/g, '""')}"`;
     const rows = filtered.map((s) =>
       [
         s.submissionId,
         s.type,
         s.submittedAt,
+        packageName(s.packageKey),
+        s.paymentStatus || "Pending",
+        s.paymentReference,
         ...Array.from(keys).map((k) => formatValue(s.data[k] ?? "")),
       ]
         .map((v) => esc(String(v)))
@@ -246,27 +412,27 @@ function AdminPage() {
             </>
           ) : (
             <>
-          <h1 className="mt-6 font-display text-xl font-extrabold text-brand-dark">Staff sign in</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Private dashboard for the AL-ATASH FIT clinical team.
-          </p>
-          <form onSubmit={handleLogin} className="mt-5 space-y-3">
-            <label htmlFor="pw" className="text-sm font-semibold">
-              Admin password
-            </label>
-            <Input
-              id="pw"
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-            {loginError && <p className="text-sm font-medium text-destructive">{loginError}</p>}
-            <Button type="submit" className="w-full" disabled={busy}>
-              {busy ? <Loader2 className="size-4 animate-spin" /> : "Sign in"}
-            </Button>
-          </form>
+              <h1 className="mt-6 font-display text-xl font-extrabold text-brand-dark">Staff sign in</h1>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Private dashboard for the AL-ATASH FIT clinical team.
+              </p>
+              <form onSubmit={handleLogin} className="mt-5 space-y-3">
+                <label htmlFor="pw" className="text-sm font-semibold">
+                  Admin password
+                </label>
+                <Input
+                  id="pw"
+                  type="password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+                {loginError && <p className="text-sm font-medium text-destructive">{loginError}</p>}
+                <Button type="submit" className="w-full" disabled={busy}>
+                  {busy ? <Loader2 className="size-4 animate-spin" /> : "Sign in"}
+                </Button>
+              </form>
             </>
           )}
           <Link to="/" className="mt-5 block text-center text-xs text-muted-foreground hover:underline">
@@ -285,6 +451,9 @@ function AdminPage() {
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => void load(token)} disabled={busy}>
               <RefreshCw className={cn("size-4", busy && "animate-spin")} /> Refresh
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setSettingsOpen(true)}>
+              <Settings2 className="size-4" /> Packages
             </Button>
             <Button variant="outline" size="sm" onClick={exportCsv} disabled={filtered.length === 0}>
               <Download className="size-4" /> CSV
@@ -307,7 +476,8 @@ function AdminPage() {
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
         <h1 className="font-display text-2xl font-extrabold text-brand-dark">Assessment submissions</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          {submissions.length} total · {filtered.length} shown
+          {submissions.length} total · {filtered.length} shown ·{" "}
+          {submissions.filter((s) => s.paymentStatus === "Proof Submitted").length} awaiting payment review
         </p>
 
         {loadError && (
@@ -343,6 +513,24 @@ function AdminPage() {
           </div>
         </div>
 
+        <div className="mt-3 flex flex-wrap items-center gap-1.5">
+          <span className="mr-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Payment
+          </span>
+          {["All", ...PAYMENT_STATUSES].map((s) => (
+            <button
+              key={s}
+              onClick={() => setStatusFilter(s)}
+              className={cn(
+                "rounded-full border px-3 py-1 text-xs transition-colors",
+                statusFilter === s ? "border-brand bg-brand text-primary-foreground" : "hover:bg-secondary",
+              )}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+
         <div className="mt-5 overflow-x-auto rounded-2xl border bg-card">
           <table className="w-full text-left text-sm">
             <thead className="bg-secondary/60 text-xs uppercase tracking-wide text-muted-foreground">
@@ -353,6 +541,8 @@ function AdminPage() {
                 <th className="px-4 py-3">Phone</th>
                 <th className="px-4 py-3">City</th>
                 <th className="px-4 py-3">BMI</th>
+                <th className="px-4 py-3">Package</th>
+                <th className="px-4 py-3">Payment</th>
                 <th className="px-4 py-3">Submitted</th>
                 <th className="px-4 py-3" />
               </tr>
@@ -366,11 +556,23 @@ function AdminPage() {
                   <td className="px-4 py-3">{s.phone}</td>
                   <td className="px-4 py-3">{s.city}</td>
                   <td className="px-4 py-3">{s.bmi}</td>
+                  <td className="px-4 py-3">{packageName(s.packageKey)}</td>
+                  <td className="px-4 py-3">
+                    <StatusBadge status={s.paymentStatus || "Pending"} />
+                  </td>
                   <td className="px-4 py-3 text-muted-foreground">
                     {s.submittedAt ? new Date(s.submittedAt).toLocaleString() : "—"}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <Button size="sm" variant="outline" onClick={() => setSelected(s)}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setSelected(s);
+                        setReviewNote(s.paymentReviewNote || "");
+                        setReviewError("");
+                      }}
+                    >
                       View
                     </Button>
                   </td>
@@ -378,7 +580,7 @@ function AdminPage() {
               ))}
               {filtered.length === 0 && !busy && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-10 text-center text-muted-foreground">
+                  <td colSpan={10} className="px-4 py-10 text-center text-muted-foreground">
                     No submissions found.
                   </td>
                 </tr>
@@ -409,6 +611,90 @@ function AdminPage() {
                 <X className="size-4" />
               </Button>
             </div>
+
+            <section className="mt-5 rounded-2xl border bg-secondary/30 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="font-display text-base font-bold text-brand-dark">Payment</h3>
+                <StatusBadge status={selected.paymentStatus || "Pending"} />
+              </div>
+              <dl className="mt-3 grid gap-x-4 gap-y-2 text-sm sm:grid-cols-2">
+                <div>
+                  <dt className="font-semibold">Package</dt>
+                  <dd className="text-muted-foreground">{packageName(selected.packageKey)}</dd>
+                </div>
+                <div>
+                  <dt className="font-semibold">Reference</dt>
+                  <dd className="text-muted-foreground">{selected.paymentReference || "—"}</dd>
+                </div>
+                <div>
+                  <dt className="font-semibold">Proof submitted</dt>
+                  <dd className="text-muted-foreground">
+                    {selected.paymentSubmittedAt ? new Date(selected.paymentSubmittedAt).toLocaleString() : "—"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="font-semibold">Reviewed</dt>
+                  <dd className="text-muted-foreground">
+                    {selected.paymentReviewedAt ? new Date(selected.paymentReviewedAt).toLocaleString() : "—"}
+                  </dd>
+                </div>
+                {selected.paymentNote && (
+                  <div className="sm:col-span-2">
+                    <dt className="font-semibold">Client note</dt>
+                    <dd className="text-muted-foreground">{selected.paymentNote}</dd>
+                  </div>
+                )}
+                {selected.paymentReviewNote && (
+                  <div className="sm:col-span-2">
+                    <dt className="font-semibold">Review note</dt>
+                    <dd className="text-muted-foreground">{selected.paymentReviewNote}</dd>
+                  </div>
+                )}
+              </dl>
+
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!selected.paymentProofPath || proofBusy}
+                  onClick={() => void openProof()}
+                >
+                  {proofBusy ? <Loader2 className="size-4 animate-spin" /> : <ExternalLink className="size-4" />}
+                  {selected.paymentProofPath ? "View payment proof" : "No proof uploaded"}
+                </Button>
+              </div>
+
+              <div className="mt-4">
+                <label htmlFor="reviewnote" className="mb-1.5 block text-sm font-semibold">
+                  Review note (optional)
+                </label>
+                <Textarea
+                  id="reviewnote"
+                  rows={2}
+                  maxLength={600}
+                  value={reviewNote}
+                  onChange={(e) => setReviewNote(e.target.value)}
+                />
+              </div>
+
+              {reviewError && <p className="mt-2 text-sm font-medium text-destructive">{reviewError}</p>}
+
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button size="sm" disabled={reviewBusy} onClick={() => void handleReview("Verified")}>
+                  {reviewBusy ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />} Verify
+                  payment
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  disabled={reviewBusy}
+                  onClick={() => void handleReview("Rejected")}
+                >
+                  <X className="size-4" /> Reject
+                </Button>
+              </div>
+            </section>
+
             <dl className="mt-5 divide-y">
               {Object.entries(selected.data).map(([k, v]) => (
                 <div key={k} className="grid gap-1 py-2.5 sm:grid-cols-[240px_1fr]">
@@ -417,6 +703,137 @@ function AdminPage() {
                 </div>
               ))}
             </dl>
+          </div>
+        </div>
+      )}
+
+      {settingsOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Package settings"
+          className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-foreground/40 p-4 backdrop-blur-sm"
+          onClick={() => setSettingsOpen(false)}
+        >
+          <div
+            className="my-8 w-full max-w-3xl rounded-3xl border bg-card p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4">
+              <h2 className="font-display text-lg font-extrabold text-brand-dark">Package & payment settings</h2>
+              <Button variant="ghost" size="icon" aria-label="Close" onClick={() => setSettingsOpen(false)}>
+                <X className="size-4" />
+              </Button>
+            </div>
+
+            <div className="mt-5 grid gap-4">
+              <div className="grid gap-1.5 sm:max-w-40">
+                <label htmlFor="currency" className="text-sm font-semibold">
+                  Currency label
+                </label>
+                <Input
+                  id="currency"
+                  value={settings.currency}
+                  maxLength={10}
+                  onChange={(e) => setSettings((p) => ({ ...p, currency: e.target.value }))}
+                />
+              </div>
+              <div className="grid gap-1.5">
+                <label htmlFor="instructions" className="text-sm font-semibold">
+                  Payment instructions shown to clients
+                </label>
+                <Textarea
+                  id="instructions"
+                  rows={3}
+                  maxLength={1000}
+                  value={settings.paymentInstructions}
+                  onChange={(e) => setSettings((p) => ({ ...p, paymentInstructions: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div className="mt-6 space-y-3">
+              {settings.packages.map((p, i) => (
+                <div key={p.key} className="rounded-2xl border p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="font-semibold">{p.name || p.key}</span>
+                    <label className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={p.active}
+                        onChange={(e) => updatePackage(i, { active: e.target.checked })}
+                      />
+                      Active
+                    </label>
+                  </div>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid gap-1.5">
+                      <label className="text-xs font-semibold text-muted-foreground">Name (English)</label>
+                      <Input value={p.name} maxLength={60} onChange={(e) => updatePackage(i, { name: e.target.value })} />
+                    </div>
+                    <div className="grid gap-1.5">
+                      <label className="text-xs font-semibold text-muted-foreground">Name (Urdu)</label>
+                      <Input
+                        value={p.nameUr}
+                        maxLength={60}
+                        onChange={(e) => updatePackage(i, { nameUr: e.target.value })}
+                      />
+                    </div>
+                    <div className="grid gap-1.5">
+                      <label className="text-xs font-semibold text-muted-foreground">Duration label</label>
+                      <Input
+                        value={p.durationLabel}
+                        maxLength={60}
+                        onChange={(e) => updatePackage(i, { durationLabel: e.target.value })}
+                      />
+                    </div>
+                    <div className="grid gap-1.5">
+                      <label className="text-xs font-semibold text-muted-foreground">Price</label>
+                      <Input
+                        type="number"
+                        min={0}
+                        value={p.price}
+                        onChange={(e) => updatePackage(i, { price: Number(e.target.value) || 0 })}
+                      />
+                    </div>
+                    <div className="grid gap-1.5">
+                      <label className="text-xs font-semibold text-muted-foreground">Max price (optional)</label>
+                      <Input
+                        type="number"
+                        min={0}
+                        value={p.priceMax ?? ""}
+                        onChange={(e) =>
+                          updatePackage(i, { priceMax: e.target.value === "" ? null : Number(e.target.value) })
+                        }
+                      />
+                    </div>
+                    <div className="grid gap-1.5">
+                      <label className="text-xs font-semibold text-muted-foreground">Duration (days)</label>
+                      <Input
+                        type="number"
+                        min={1}
+                        value={p.durationDays}
+                        onChange={(e) => updatePackage(i, { durationDays: Number(e.target.value) || 1 })}
+                      />
+                    </div>
+                  </div>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Clients see: {formatPrice(p, settings.currency)} · {p.durationLabel}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            {settingsMsg && <p className="mt-4 text-sm font-medium text-brand-dark">{settingsMsg}</p>}
+
+            <div className="mt-5 flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setSettingsOpen(false)}>
+                Close
+              </Button>
+              <Button disabled={settingsBusy} onClick={() => void handleSaveSettings()}>
+                {settingsBusy && <Loader2 className="size-4 animate-spin" />} Save settings
+              </Button>
+            </div>
           </div>
         </div>
       )}
