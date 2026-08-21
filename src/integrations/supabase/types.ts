@@ -32,6 +32,86 @@ export type Database = {
         }
         Relationships: []
       }
+      diet_plans: {
+        Row: {
+          activity_guidance: string
+          breakfast: string
+          consultant_name: string
+          consultant_note: string
+          created_at: string
+          dinner: string
+          duration_label: string
+          evening_snack: string
+          foods_limit: string
+          foods_prefer: string
+          id: string
+          lunch: string
+          mid_morning: string
+          notes: string
+          patient_name: string
+          plan_title: string
+          released_at: string | null
+          status: string
+          submission_id: string
+          updated_at: string
+          water_guidance: string
+        }
+        Insert: {
+          activity_guidance?: string
+          breakfast?: string
+          consultant_name?: string
+          consultant_note?: string
+          created_at?: string
+          dinner?: string
+          duration_label?: string
+          evening_snack?: string
+          foods_limit?: string
+          foods_prefer?: string
+          id?: string
+          lunch?: string
+          mid_morning?: string
+          notes?: string
+          patient_name?: string
+          plan_title?: string
+          released_at?: string | null
+          status?: string
+          submission_id: string
+          updated_at?: string
+          water_guidance?: string
+        }
+        Update: {
+          activity_guidance?: string
+          breakfast?: string
+          consultant_name?: string
+          consultant_note?: string
+          created_at?: string
+          dinner?: string
+          duration_label?: string
+          evening_snack?: string
+          foods_limit?: string
+          foods_prefer?: string
+          id?: string
+          lunch?: string
+          mid_morning?: string
+          notes?: string
+          patient_name?: string
+          plan_title?: string
+          released_at?: string | null
+          status?: string
+          submission_id?: string
+          updated_at?: string
+          water_guidance?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "diet_plans_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: true
+            referencedRelation: "submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       submissions: {
         Row: {
           age: string

@@ -165,3 +165,72 @@ export const adminProofUrl = createServerFn({ method: "POST" })
       return { ok: false as const, error: err instanceof Error ? err.message : "Could not open proof.", url: "" };
     }
   });
+
+export const adminListDietPlans = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => z.object({ token: tokenRule }).parse(input))
+  .handler(async ({ data }) => {
+    const { verifyToken } = await import("@/lib/admin-auth.server");
+    if (!(await verifyToken(data.token))) {
+      return { ok: false as const, error: "Session expired.", plans: [] };
+    }
+    const { listDietPlans } = await import("@/lib/diet-plans.server");
+    try {
+      return { ok: true as const, error: "", plans: await listDietPlans() };
+    } catch (err) {
+      return {
+        ok: false as const,
+        error: err instanceof Error ? err.message : "Could not load diet plans.",
+        plans: [],
+      };
+    }
+  });
+
+const dietPlanSchema = z.object({
+  submissionRecordId: z.string().uuid(),
+  status: z.enum([
+    "Not Started",
+    "Draft",
+    "Ready for Review",
+    "Consultant Approved",
+    "Released",
+    "Rejected/Needs Changes",
+  ]),
+  patientName: z.string().max(120).default(""),
+  planTitle: z.string().max(160).default(""),
+  durationLabel: z.string().max(80).default(""),
+  breakfast: z.string().max(2000).default(""),
+  midMorning: z.string().max(2000).default(""),
+  lunch: z.string().max(2000).default(""),
+  eveningSnack: z.string().max(2000).default(""),
+  dinner: z.string().max(2000).default(""),
+  waterGuidance: z.string().max(1000).default(""),
+  activityGuidance: z.string().max(1000).default(""),
+  foodsPrefer: z.string().max(2000).default(""),
+  foodsLimit: z.string().max(2000).default(""),
+  notes: z.string().max(2000).default(""),
+  consultantName: z.string().max(120).default(""),
+  consultantNote: z.string().max(1000).default(""),
+  releasedAt: z.string().max(60).default(""),
+  updatedAt: z.string().max(60).default(""),
+});
+
+export const adminSaveDietPlan = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => z.object({ token: tokenRule, plan: dietPlanSchema }).parse(input))
+  .handler(async ({ data }) => {
+    const { verifyToken } = await import("@/lib/admin-auth.server");
+    const { emptyDietPlan } = await import("@/lib/diet-plans");
+    if (!(await verifyToken(data.token))) {
+      return { ok: false as const, error: "Session expired.", plan: emptyDietPlan(data.plan.submissionRecordId) };
+    }
+    const { saveDietPlan } = await import("@/lib/diet-plans.server");
+    try {
+      return { ok: true as const, error: "", plan: await saveDietPlan(data.plan) };
+    } catch (err) {
+      return {
+        ok: false as const,
+        error: err instanceof Error ? err.message : "Could not save diet plan.",
+        plan: emptyDietPlan(data.plan.submissionRecordId),
+      };
+    }
+  });
+
