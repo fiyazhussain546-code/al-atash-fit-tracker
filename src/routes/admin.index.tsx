@@ -26,6 +26,8 @@ import {
   adminSavePackages,
   adminReviewPayment,
   adminProofUrl,
+  adminListDietPlans,
+  adminSaveDietPlan,
 } from "@/lib/admin.functions";
 import { allFields, type AssessmentType } from "@/lib/assessment-schema";
 import {
@@ -35,6 +37,9 @@ import {
   type DietPackage,
   type PackageSettings,
 } from "@/lib/packages";
+import { DietPlanEditor, type EditorSubmission } from "@/components/diet-plan-editor";
+import { DIET_PLAN_STATUSES, emptyDietPlan, type DietPlan } from "@/lib/diet-plans";
+
 
 export const Route = createFileRoute("/admin/")({
   head: () => ({
@@ -92,6 +97,28 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
+const planStatusClass: Record<string, string> = {
+  "Not Started": "bg-secondary text-muted-foreground",
+  Draft: "bg-accent text-accent-foreground",
+  "Ready for Review": "bg-accent text-accent-foreground",
+  "Consultant Approved": "bg-brand/15 text-brand-dark",
+  Released: "bg-brand text-primary-foreground",
+  "Rejected/Needs Changes": "bg-destructive/10 text-destructive",
+};
+
+function PlanBadge({ status }: { status: string }) {
+  return (
+    <span
+      className={cn(
+        "inline-block whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold",
+        planStatusClass[status] ?? "bg-secondary text-muted-foreground",
+      )}
+    >
+      {status}
+    </span>
+  );
+}
+
 function labelFor(type: string, fieldId: string) {
   const t = (type.toLowerCase() as AssessmentType) || "male";
   const f = allFields(["child", "female", "male"].includes(t) ? t : "male").find((x) => x.id === fieldId);
@@ -126,6 +153,13 @@ function AdminPage() {
   const [settings, setSettings] = useState<PackageSettings>(DEFAULT_PACKAGE_SETTINGS);
   const [settingsMsg, setSettingsMsg] = useState("");
   const [settingsBusy, setSettingsBusy] = useState(false);
+  const [tab, setTab] = useState<"submissions" | "plans">("submissions");
+  const [plans, setPlans] = useState<DietPlan[]>([]);
+  const [planFilter, setPlanFilter] = useState("All");
+  const [planTarget, setPlanTarget] = useState<Submission | null>(null);
+  const [planBusy, setPlanBusy] = useState(false);
+  const [planError, setPlanError] = useState("");
+  const [planMsg, setPlanMsg] = useState("");
 
   const login = useServerFn(adminLogin);
   const list = useServerFn(adminListSubmissions);
@@ -135,6 +169,8 @@ function AdminPage() {
   const savePackages = useServerFn(adminSavePackages);
   const reviewPayment = useServerFn(adminReviewPayment);
   const proofUrl = useServerFn(adminProofUrl);
+  const listPlans = useServerFn(adminListDietPlans);
+  const savePlan = useServerFn(adminSaveDietPlan);
 
   useEffect(() => {
     const saved = sessionStorage.getItem(TOKEN_KEY);
@@ -199,8 +235,70 @@ function AdminPage() {
     };
   }, [token, getPackages]);
 
+  const loadPlans = useMemo(
+    () => async (t: string) => {
+      try {
+        const res = await listPlans({ data: { token: t } });
+        if (res.ok) setPlans(res.plans as DietPlan[]);
+      } catch {
+        /* non-fatal */
+      }
+    },
+    [listPlans],
+  );
+
+  useEffect(() => {
+    if (token) void loadPlans(token);
+  }, [token, loadPlans]);
+
   const packageName = (key: string) =>
     settings.packages.find((p) => p.key === key)?.name ?? (key || "—");
+
+  const planFor = (recordId: string) =>
+    plans.find((p) => p.submissionRecordId === recordId) ?? emptyDietPlan(recordId);
+
+  function editorSubmission(s: Submission): EditorSubmission {
+    const pkg = settings.packages.find((p) => p.key === s.packageKey);
+    return {
+      recordId: s.recordId,
+      submissionId: s.submissionId,
+      type: s.type,
+      name: s.name,
+      phone: s.phone,
+      city: s.city,
+      age: s.age,
+      bmi: s.bmi,
+      packageLabel: pkg?.name ?? "",
+      packageDuration: pkg?.durationLabel ?? "",
+      paymentStatus: s.paymentStatus || "Pending",
+      data: s.data,
+    };
+  }
+
+  async function handleSavePlan(plan: DietPlan) {
+    if (!token) return;
+    setPlanBusy(true);
+    setPlanError("");
+    setPlanMsg("");
+    try {
+      const res = await savePlan({ data: { token, plan } });
+      if (!res.ok) {
+        setPlanError(res.error);
+        return;
+      }
+      const saved = res.plan as DietPlan;
+      setPlans((prev) => {
+        const rest = prev.filter((p) => p.submissionRecordId !== saved.submissionRecordId);
+        return [...rest, saved];
+      });
+      setPlanMsg(`Plan saved as “${saved.status}”.`);
+    } catch (err) {
+      setPlanError(err instanceof Error ? err.message : "Could not save diet plan.");
+    } finally {
+      setPlanBusy(false);
+    }
+  }
+
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -325,6 +423,16 @@ function AdminPage() {
     const q = query.toLowerCase();
     return [s.submissionId, s.name, s.phone, s.city, s.type].some((v) => (v ?? "").toLowerCase().includes(q));
   });
+
+  const filteredPlans = submissions.filter((s) => {
+    if (typeFilter !== "All" && s.type !== typeFilter) return false;
+    if (planFilter !== "All" && planFor(s.recordId).status !== planFilter) return false;
+    if (!query.trim()) return true;
+    const q = query.toLowerCase();
+    return [s.submissionId, s.name, s.phone, s.city, s.type].some((v) => (v ?? "").toLowerCase().includes(q));
+  });
+
+
 
   function exportCsv() {
     const keys = new Set<string>();
@@ -474,11 +582,43 @@ function AdminPage() {
       </header>
 
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-        <h1 className="font-display text-2xl font-extrabold text-brand-dark">Assessment submissions</h1>
+        <div className="mb-5 inline-flex rounded-full border bg-card p-1">
+          {(
+            [
+              ["submissions", "Submissions"],
+              ["plans", "Diet Plans"],
+            ] as const
+          ).map(([k, label]) => (
+            <button
+              key={k}
+              onClick={() => setTab(k)}
+              className={cn(
+                "rounded-full px-4 py-1.5 text-sm font-semibold transition-colors",
+                tab === k ? "bg-brand text-primary-foreground" : "text-muted-foreground hover:bg-secondary",
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <h1 className="font-display text-2xl font-extrabold text-brand-dark">
+          {tab === "plans" ? "Diet plans" : "Assessment submissions"}
+        </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          {submissions.length} total · {filtered.length} shown ·{" "}
-          {submissions.filter((s) => s.paymentStatus === "Proof Submitted").length} awaiting payment review
+          {tab === "plans" ? (
+            <>
+              {submissions.length} patients · {filteredPlans.length} shown ·{" "}
+              {plans.filter((p) => p.status === "Ready for Review").length} ready for review
+            </>
+          ) : (
+            <>
+              {submissions.length} total · {filtered.length} shown ·{" "}
+              {submissions.filter((s) => s.paymentStatus === "Proof Submitted").length} awaiting payment review
+            </>
+          )}
         </p>
+
 
         {loadError && (
           <p role="alert" className="mt-4 rounded-xl border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
@@ -513,7 +653,89 @@ function AdminPage() {
           </div>
         </div>
 
+        {tab === "plans" ? (
+          <>
+            <div className="mt-3 flex flex-wrap items-center gap-1.5">
+              <span className="mr-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Plan status
+              </span>
+              {["All", ...DIET_PLAN_STATUSES].map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setPlanFilter(s)}
+                  className={cn(
+                    "rounded-full border px-3 py-1 text-xs transition-colors",
+                    planFilter === s ? "border-brand bg-brand text-primary-foreground" : "hover:bg-secondary",
+                  )}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+
+            <div className="mt-5 overflow-x-auto rounded-2xl border bg-card">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-secondary/60 text-xs uppercase tracking-wide text-muted-foreground">
+                  <tr>
+                    <th className="px-4 py-3">Patient</th>
+                    <th className="px-4 py-3">Submission ID</th>
+                    <th className="px-4 py-3">Type</th>
+                    <th className="px-4 py-3">Phone</th>
+                    <th className="px-4 py-3">City</th>
+                    <th className="px-4 py-3">Package</th>
+                    <th className="px-4 py-3">Payment</th>
+                    <th className="px-4 py-3">Diet plan</th>
+                    <th className="px-4 py-3" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredPlans.map((s) => {
+                    const plan = planFor(s.recordId);
+                    return (
+                      <tr key={s.recordId} className="border-t hover:bg-secondary/40">
+                        <td className="px-4 py-3 font-medium">{s.name || "—"}</td>
+                        <td className="px-4 py-3 font-mono text-xs">{s.submissionId}</td>
+                        <td className="px-4 py-3">{s.type}</td>
+                        <td className="px-4 py-3">{s.phone}</td>
+                        <td className="px-4 py-3">{s.city}</td>
+                        <td className="px-4 py-3">{packageName(s.packageKey)}</td>
+                        <td className="px-4 py-3">
+                          <StatusBadge status={s.paymentStatus || "Pending"} />
+                        </td>
+                        <td className="px-4 py-3">
+                          <PlanBadge status={plan.status} />
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setPlanTarget(s);
+                              setPlanError("");
+                              setPlanMsg("");
+                            }}
+                          >
+                            {plan.status === "Not Started" ? "Create plan" : "Edit plan"}
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {filteredPlans.length === 0 && !busy && (
+                    <tr>
+                      <td colSpan={9} className="px-4 py-10 text-center text-muted-foreground">
+                        No patients found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </>
+        ) : (
+          <>
         <div className="mt-3 flex flex-wrap items-center gap-1.5">
+
           <span className="mr-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Payment
           </span>
@@ -588,7 +810,22 @@ function AdminPage() {
             </tbody>
           </table>
         </div>
+          </>
+        )}
       </div>
+
+      {planTarget && (
+        <DietPlanEditor
+          key={planTarget.recordId}
+          submission={editorSubmission(planTarget)}
+          plan={planFor(planTarget.recordId)}
+          saving={planBusy}
+          error={planError}
+          message={planMsg}
+          onClose={() => setPlanTarget(null)}
+          onSave={(p) => void handleSavePlan(p)}
+        />
+      )}
 
       {selected && (
         <div
