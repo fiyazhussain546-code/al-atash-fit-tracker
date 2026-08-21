@@ -35,6 +35,11 @@ export type Database = {
       diet_plans: {
         Row: {
           activity_guidance: string
+          ai_draft: Json
+          ai_generated_at: string | null
+          ai_generation_count: number
+          ai_review_flags: string
+          ai_review_required: boolean
           breakfast: string
           consultant_name: string
           consultant_note: string
@@ -58,6 +63,11 @@ export type Database = {
         }
         Insert: {
           activity_guidance?: string
+          ai_draft?: Json
+          ai_generated_at?: string | null
+          ai_generation_count?: number
+          ai_review_flags?: string
+          ai_review_required?: boolean
           breakfast?: string
           consultant_name?: string
           consultant_note?: string
@@ -81,6 +91,11 @@ export type Database = {
         }
         Update: {
           activity_guidance?: string
+          ai_draft?: Json
+          ai_generated_at?: string | null
+          ai_generation_count?: number
+          ai_review_flags?: string
+          ai_review_required?: boolean
           breakfast?: string
           consultant_name?: string
           consultant_note?: string
