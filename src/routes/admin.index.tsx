@@ -28,6 +28,7 @@ import {
   adminProofUrl,
   adminListDietPlans,
   adminSaveDietPlan,
+  adminGenerateDietDraft,
 } from "@/lib/admin.functions";
 import { allFields, type AssessmentType } from "@/lib/assessment-schema";
 import {
@@ -171,6 +172,8 @@ function AdminPage() {
   const proofUrl = useServerFn(adminProofUrl);
   const listPlans = useServerFn(adminListDietPlans);
   const savePlan = useServerFn(adminSaveDietPlan);
+  const generateDraft = useServerFn(adminGenerateDietDraft);
+  const [aiBusy, setAiBusy] = useState(false);
 
   useEffect(() => {
     const saved = sessionStorage.getItem(TOKEN_KEY);
@@ -273,6 +276,49 @@ function AdminPage() {
       paymentStatus: s.paymentStatus || "Pending",
       data: s.data,
     };
+  }
+
+  async function handleGenerateDraft(mode: "generate" | "improve", current: DietPlan): Promise<DietPlan | null> {
+    if (!token || !planTarget) return null;
+    setAiBusy(true);
+    setPlanError("");
+    setPlanMsg("");
+    try {
+      const res = await generateDraft({
+        data: {
+          token,
+          recordId: planTarget.recordId,
+          mode,
+          current: {
+            planTitle: current.planTitle,
+            durationLabel: current.durationLabel,
+            breakfast: current.breakfast,
+            midMorning: current.midMorning,
+            lunch: current.lunch,
+            eveningSnack: current.eveningSnack,
+            dinner: current.dinner,
+            waterGuidance: current.waterGuidance,
+            activityGuidance: current.activityGuidance,
+            foodsPrefer: current.foodsPrefer,
+            foodsLimit: current.foodsLimit,
+            notes: current.notes,
+          },
+        },
+      });
+      if (!res.ok) {
+        setPlanError(res.error);
+        return null;
+      }
+      const saved = res.plan as DietPlan;
+      setPlans((prev) => [...prev.filter((p) => p.submissionRecordId !== saved.submissionRecordId), saved]);
+      setPlanMsg(mode === "improve" ? "Draft improved — please review and edit." : "AI draft generated — please review and edit.");
+      return saved;
+    } catch (err) {
+      setPlanError(err instanceof Error ? err.message : "Could not generate the AI draft.");
+      return null;
+    } finally {
+      setAiBusy(false);
+    }
   }
 
   async function handleSavePlan(plan: DietPlan) {
@@ -824,6 +870,8 @@ function AdminPage() {
           message={planMsg}
           onClose={() => setPlanTarget(null)}
           onSave={(p) => void handleSavePlan(p)}
+          aiBusy={aiBusy}
+          onGenerate={handleGenerateDraft}
         />
       )}
 
