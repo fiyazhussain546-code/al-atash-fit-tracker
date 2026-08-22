@@ -212,6 +212,10 @@ const dietPlanSchema = z.object({
   consultantNote: z.string().max(1000).default(""),
   releasedAt: z.string().max(60).default(""),
   updatedAt: z.string().max(60).default(""),
+  aiGeneratedAt: z.string().max(60).default(""),
+  aiGenerationCount: z.number().int().min(0).max(10000).default(0),
+  aiReviewRequired: z.boolean().default(false),
+  aiReviewFlags: z.string().max(2000).default(""),
 });
 
 export const adminSaveDietPlan = createServerFn({ method: "POST" })
@@ -234,3 +238,47 @@ export const adminSaveDietPlan = createServerFn({ method: "POST" })
     }
   });
 
+
+const aiFieldsSchema = z.object({
+  planTitle: z.string().max(160).default(""),
+  durationLabel: z.string().max(80).default(""),
+  breakfast: z.string().max(2000).default(""),
+  midMorning: z.string().max(2000).default(""),
+  lunch: z.string().max(2000).default(""),
+  eveningSnack: z.string().max(2000).default(""),
+  dinner: z.string().max(2000).default(""),
+  waterGuidance: z.string().max(1000).default(""),
+  activityGuidance: z.string().max(1000).default(""),
+  foodsPrefer: z.string().max(2000).default(""),
+  foodsLimit: z.string().max(2000).default(""),
+  notes: z.string().max(2000).default(""),
+});
+
+export const adminGenerateDietDraft = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        token: tokenRule,
+        recordId: z.string().uuid(),
+        mode: z.enum(["generate", "improve"]),
+        current: aiFieldsSchema.optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    const { verifyToken } = await import("@/lib/admin-auth.server");
+    const { emptyDietPlan } = await import("@/lib/diet-plans");
+    if (!(await verifyToken(data.token))) {
+      return { ok: false as const, error: "Session expired.", plan: emptyDietPlan(data.recordId) };
+    }
+    const { generateAiDraft } = await import("@/lib/diet-plan-ai.server");
+    try {
+      return { ok: true as const, error: "", plan: await generateAiDraft(data.recordId, data.mode, data.current) };
+    } catch (err) {
+      return {
+        ok: false as const,
+        error: err instanceof Error ? err.message : "Could not generate the AI draft.",
+        plan: emptyDietPlan(data.recordId),
+      };
+    }
+  });

@@ -2,7 +2,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { emptyDietPlan, type DietPlan, type DietPlanStatus } from "@/lib/diet-plans";
 
 const COLUMNS =
-  "submission_id, status, patient_name, plan_title, duration_label, breakfast, mid_morning, lunch, evening_snack, dinner, water_guidance, activity_guidance, foods_prefer, foods_limit, notes, consultant_name, consultant_note, released_at, updated_at";
+  "submission_id, status, patient_name, plan_title, duration_label, breakfast, mid_morning, lunch, evening_snack, dinner, water_guidance, activity_guidance, foods_prefer, foods_limit, notes, consultant_name, consultant_note, released_at, updated_at, ai_draft, ai_generated_at, ai_generation_count, ai_review_required, ai_review_flags";
 
 type Row = {
   submission_id: string;
@@ -24,6 +24,11 @@ type Row = {
   consultant_note: string;
   released_at: string | null;
   updated_at: string;
+  ai_draft?: Record<string, string> | null;
+  ai_generated_at?: string | null;
+  ai_generation_count?: number | null;
+  ai_review_required?: boolean | null;
+  ai_review_flags?: string | null;
 };
 
 function toPlan(r: Row): DietPlan {
@@ -47,6 +52,10 @@ function toPlan(r: Row): DietPlan {
     consultantNote: r.consultant_note ?? "",
     releasedAt: r.released_at ?? "",
     updatedAt: r.updated_at ?? "",
+    aiGeneratedAt: r.ai_generated_at ?? "",
+    aiGenerationCount: r.ai_generation_count ?? 0,
+    aiReviewRequired: r.ai_review_required ?? false,
+    aiReviewFlags: r.ai_review_flags ?? "",
   };
 }
 
