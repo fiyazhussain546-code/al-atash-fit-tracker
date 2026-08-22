@@ -212,6 +212,10 @@ const dietPlanSchema = z.object({
   consultantNote: z.string().max(1000).default(""),
   releasedAt: z.string().max(60).default(""),
   updatedAt: z.string().max(60).default(""),
+  aiGeneratedAt: z.string().max(60).default(""),
+  aiGenerationCount: z.number().int().min(0).max(10000).default(0),
+  aiReviewRequired: z.boolean().default(false),
+  aiReviewFlags: z.string().max(2000).default(""),
 });
 
 export const adminSaveDietPlan = createServerFn({ method: "POST" })

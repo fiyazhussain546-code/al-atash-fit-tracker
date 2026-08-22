@@ -78,5 +78,9 @@ export function emptyDietPlan(submissionRecordId: string): DietPlan {
     consultantNote: "",
     releasedAt: "",
     updatedAt: "",
+    aiGeneratedAt: "",
+    aiGenerationCount: 0,
+    aiReviewRequired: false,
+    aiReviewFlags: "",
   };
 }
