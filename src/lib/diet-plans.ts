@@ -44,7 +44,18 @@ export interface DietPlan {
   consultantNote: string;
   releasedAt: string;
   updatedAt: string;
+  /** Timestamp of the last AI draft generation ("" when never generated). */
+  aiGeneratedAt: string;
+  /** How many times an AI draft was generated for this plan. */
+  aiGenerationCount: number;
+  /** True when the assessment contains factors needing professional judgement. */
+  aiReviewRequired: boolean;
+  /** Plain-language reasons behind aiReviewRequired. */
+  aiReviewFlags: string;
 }
+
+export const AI_DRAFT_BANNER_EN = "AI Draft — Pending Professional Review";
+export const AI_DRAFT_BANNER_UR = "AI ڈرافٹ — پروفیشنل جائزہ درکار ہے";
 
 export function emptyDietPlan(submissionRecordId: string): DietPlan {
   return {
