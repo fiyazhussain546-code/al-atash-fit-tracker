@@ -1,10 +1,12 @@
 import { useMemo, useState } from "react";
-import { Loader2, X } from "lucide-react";
+import { Loader2, Sparkles, ShieldAlert, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import {
+  AI_DRAFT_BANNER_EN,
+  AI_DRAFT_BANNER_UR,
   DIET_PLAN_STATUSES,
   DIET_PLAN_STATUS_UR,
   emptyDietPlan,
@@ -54,6 +56,8 @@ export function DietPlanEditor({
   message,
   onClose,
   onSave,
+  aiBusy = false,
+  onGenerate,
 }: {
   submission: EditorSubmission;
   plan: DietPlan;
@@ -62,6 +66,9 @@ export function DietPlanEditor({
   message: string;
   onClose: () => void;
   onSave: (plan: DietPlan) => void;
+  aiBusy?: boolean;
+  /** Generates or improves the AI first draft; resolves with the saved plan. */
+  onGenerate?: (mode: "generate" | "improve", current: DietPlan) => Promise<DietPlan | null>;
 }) {
   const [draft, setDraft] = useState<DietPlan>(() => prefillFromSubmission(submission, plan));
   const set = (patch: Partial<DietPlan>) => setDraft((p) => ({ ...p, ...patch }));
@@ -84,6 +91,20 @@ export function DietPlanEditor({
       ].filter(([, v]) => v),
     [submission],
   );
+
+  const hasAiDraft = Boolean(draft.aiGeneratedAt);
+
+  async function runAi(mode: "generate" | "improve") {
+    if (!onGenerate) return;
+    if (mode === "generate" && hasAiDraft) {
+      const ok = window.confirm(
+        "Regenerating will replace the current AI draft. Any manual changes may be lost. Continue?",
+      );
+      if (!ok) return;
+    }
+    const saved = await onGenerate(mode, draft);
+    if (saved) setDraft(saved);
+  }
 
   const paymentVerified = submission.paymentStatus === "Verified";
   const canRelease = paymentVerified && (plan.status === "Consultant Approved" || plan.status === "Released");
@@ -141,6 +162,63 @@ export function DietPlanEditor({
               </div>
             ))}
           </dl>
+        </section>
+
+        <section className="mt-4 rounded-2xl border border-brand/30 bg-brand/5 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="flex items-center gap-2 text-sm font-bold text-brand-dark">
+                <Sparkles className="size-4" /> AI draft assistant
+                <span className="font-normal text-muted-foreground">· AI معاون</span>
+              </h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Uses this patient&rsquo;s submitted assessment. Never released automatically — you review and edit
+                first.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" disabled={aiBusy || !paymentVerified} onClick={() => void runAi("generate")}>
+                {aiBusy && <Loader2 className="size-4 animate-spin" />}
+                {hasAiDraft ? "Regenerate AI Draft · AI ڈرافٹ دوبارہ تیار کریں" : "Generate AI Draft · AI ڈائٹ پلان تیار کریں"}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={aiBusy || !paymentVerified || !hasAiDraft}
+                onClick={() => void runAi("improve")}
+              >
+                Improve Draft · ڈرافٹ بہتر کریں
+              </Button>
+            </div>
+          </div>
+
+          {!paymentVerified && (
+            <p className="mt-3 text-xs font-medium text-muted-foreground">
+              AI drafting unlocks after the payment for this submission is verified.
+            </p>
+          )}
+
+          {hasAiDraft && (
+            <div className="mt-3 rounded-xl border border-amber-400/60 bg-amber-50 p-3 text-amber-900">
+              <p className="text-sm font-bold">
+                {AI_DRAFT_BANNER_EN} <span className="font-normal">· {AI_DRAFT_BANNER_UR}</span>
+              </p>
+              <p className="mt-1 text-xs">AI-generated draft — You can edit before approval.</p>
+              <p className="mt-1 text-xs opacity-80">
+                Generated {new Date(draft.aiGeneratedAt).toLocaleString()} · attempt {draft.aiGenerationCount}
+              </p>
+            </div>
+          )}
+
+          {draft.aiReviewRequired && (
+            <div className="mt-3 flex gap-2 rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-destructive">
+              <ShieldAlert className="mt-0.5 size-4 shrink-0" />
+              <div>
+                <p className="text-sm font-bold">Professional review required before release.</p>
+                {draft.aiReviewFlags && <p className="mt-1 text-xs">{draft.aiReviewFlags}</p>}
+              </div>
+            </div>
+          )}
         </section>
 
         <div className="mt-5 grid gap-4">
