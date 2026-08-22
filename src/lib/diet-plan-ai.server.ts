@@ -207,8 +207,7 @@ export async function generateAiDraft(
   );
 
   const now = new Date().toISOString();
-  const nextStatus =
-    existing.status === "Not Started" || !existing.status ? "Draft" : existing.status === "Released" ? "Draft" : existing.status;
+  const nextStatus = existing.status && existing.status !== "Not Started" ? existing.status : "Draft";
 
   const { data, error } = await supabaseAdmin
     .from("diet_plans")
@@ -229,7 +228,7 @@ export async function generateAiDraft(
         foods_prefer: draft.foodsPrefer,
         foods_limit: draft.foodsLimit,
         notes: draft.notes,
-        ai_draft: draft as unknown as Record<string, unknown>,
+        ai_draft: { ...draft } as unknown as Record<string, string | boolean>,
         ai_generated_at: now,
         ai_generation_count: (existing.aiGenerationCount ?? 0) + 1,
         ai_review_required: draft.reviewRequired,
