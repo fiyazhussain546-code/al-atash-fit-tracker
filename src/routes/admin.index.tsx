@@ -750,6 +750,16 @@ function AdminPage() {
                         </td>
                         <td className="px-4 py-3">
                           <PlanBadge status={plan.status} />
+                          {plan.aiGeneratedAt && (
+                            <span className="mt-1 block text-[11px] font-medium text-amber-700">
+                              AI Draft — Pending Professional Review
+                            </span>
+                          )}
+                          {plan.aiReviewRequired && (
+                            <span className="mt-0.5 block text-[11px] font-medium text-destructive">
+                              Professional review required before release.
+                            </span>
+                          )}
                         </td>
                         <td className="px-4 py-3 text-right">
                           <Button
