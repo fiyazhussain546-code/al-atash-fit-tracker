@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
 import { CheckCircle2, Loader2, AlertTriangle, ArrowLeft, Info } from "lucide-react";
 import { Urdu, Logo } from "@/components/brand";
@@ -9,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { PaymentStep } from "@/components/payment-step";
-import { submitAssessment } from "@/lib/assessment.functions";
+import { supabase } from "@/integrations/supabase/client";
 
 import {
   getSections,
@@ -200,7 +199,6 @@ export function AssessmentForm({ type }: { type: AssessmentType }) {
   const [serverError, setServerError] = useState("");
   const [result, setResult] = useState<{ submissionId: string; submittedAt: string } | null>(null);
   const topRef = useRef<HTMLDivElement>(null);
-  const submit = useServerFn(submitAssessment);
 
   const set = (id: string, v: Value) => {
     setValues((prev) => ({ ...prev, [id]: v }));
@@ -235,15 +233,25 @@ export function AssessmentForm({ type }: { type: AssessmentType }) {
     }
     setStatus("saving");
     try {
-      const res = await submit({ data: { type, values } });
-      if (res.ok) {
-        setResult({ submissionId: res.submissionId, submittedAt: res.submittedAt });
+      const subId = "SUB-" + Math.random().toString(36).substring(2, 9).toUpperCase();
+      const now = new Date().toISOString();
+
+      const { error } = await supabase
+        .from('assessments')
+        .insert([{ 
+          type, 
+          values, 
+          submission_id: subId, 
+          created_at: now 
+        }]);
+
+      if (error) {
+        setServerError(error.message);
+        setStatus("idle");
+      } else {
+        setResult({ submissionId: subId, submittedAt: now });
         setStatus("done");
         window.scrollTo({ top: 0, behavior: "smooth" });
-      } else {
-        setServerError(res.error);
-        setStatus("idle");
-        if ("missing" in res && res.missing) setErrors(res.missing);
       }
     } catch (err) {
       setServerError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
@@ -277,7 +285,6 @@ export function AssessmentForm({ type }: { type: AssessmentType }) {
       </div>
     );
   }
-
 
   return (
     <div ref={topRef} className="mx-auto max-w-4xl px-4 pb-24 pt-6 sm:px-6">
