@@ -39,6 +39,7 @@ import {
   type PackageSettings,
 } from "@/lib/packages";
 import { DietPlanEditor, type EditorSubmission } from "@/components/diet-plan-editor";
+import { downloadDietPlanPdf } from "@/lib/diet-plan-pdf";
 import { DIET_PLAN_STATUSES, emptyDietPlan, type DietPlan } from "@/lib/diet-plans";
 
 
@@ -762,17 +763,33 @@ function AdminPage() {
                           )}
                         </td>
                         <td className="px-4 py-3 text-right">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setPlanTarget(s);
-                              setPlanError("");
-                              setPlanMsg("");
-                            }}
-                          >
-                            {plan.status === "Not Started" ? "Create plan" : "Edit plan"}
-                          </Button>
+                          <div className="flex flex-wrap justify-end gap-2">
+                            {(plan.status === "Consultant Approved" || plan.status === "Released") && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() =>
+                                  void downloadDietPlanPdf(plan, {
+                                    submissionId: s.submissionId,
+                                    packageLabel: packageName(s.packageKey),
+                                  })
+                                }
+                              >
+                                <Download className="size-4" /> PDF
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setPlanTarget(s);
+                                setPlanError("");
+                                setPlanMsg("");
+                              }}
+                            >
+                              {plan.status === "Not Started" ? "Create plan" : "Edit plan"}
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     );
