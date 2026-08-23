@@ -322,6 +322,19 @@ export function DietPlanEditor({
         {message && <p className="mt-4 text-sm font-medium text-brand-dark">{message}</p>}
 
         <div className="mt-5 flex flex-wrap justify-end gap-2">
+          {(plan.status === "Consultant Approved" || plan.status === "Released") && (
+            <Button
+              variant="outline"
+              onClick={() =>
+                void downloadDietPlanPdf(plan, {
+                  submissionId: submission.submissionId,
+                  packageLabel: submission.packageLabel,
+                })
+              }
+            >
+              <Download className="size-4" /> Download PDF
+            </Button>
+          )}
           <Button variant="outline" onClick={onClose}>
             Close
           </Button>
