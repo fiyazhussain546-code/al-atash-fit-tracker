@@ -234,23 +234,13 @@ export function AssessmentForm({ type }: { type: AssessmentType }) {
     }
     setStatus("saving");
     try {
-      const subId = "SUB-" + Math.random().toString(36).substring(2, 9).toUpperCase();
-      const now = new Date().toISOString();
-
-      const { error } = await supabase
-        .from('assessments')
-        .insert([{ 
-          type, 
-          values, 
-          submission_id: subId, 
-          created_at: now 
-        }]);
-
-      if (error) {
-        setServerError(error.message);
+      const res = await submit({ data: { type, values } });
+      if (!res.ok) {
+        setServerError(res.error || "Could not save submission.");
+        if ("missing" in res && res.missing) setErrors(res.missing);
         setStatus("idle");
       } else {
-        setResult({ submissionId: subId, submittedAt: now });
+        setResult({ submissionId: res.submissionId, submittedAt: res.submittedAt });
         setStatus("done");
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
