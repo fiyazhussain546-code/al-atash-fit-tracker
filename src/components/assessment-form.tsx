@@ -215,6 +215,8 @@ export function AssessmentForm({ type }: { type: AssessmentType }) {
     setValues((prev) => (prev["bmi"] === next ? prev : { ...prev, bmi: next }));
   }, [bmi]);
 
+  const submit = useServerFn(submitAssessment);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const missing = sections
