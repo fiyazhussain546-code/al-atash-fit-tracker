@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { Loader2, Sparkles, ShieldAlert, X } from "lucide-react";
+import { Loader2, Sparkles, ShieldAlert, X, Download } from "lucide-react";
+import { downloadDietPlanPdf } from "@/lib/diet-plan-pdf";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
