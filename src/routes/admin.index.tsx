@@ -39,6 +39,7 @@ import {
   type PackageSettings,
 } from "@/lib/packages";
 import { DietPlanEditor, type EditorSubmission } from "@/components/diet-plan-editor";
+import { downloadDietPlanPdf } from "@/lib/diet-plan-pdf";
 import { DIET_PLAN_STATUSES, emptyDietPlan, type DietPlan } from "@/lib/diet-plans";
 
 
