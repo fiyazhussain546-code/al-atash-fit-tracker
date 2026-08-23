@@ -8,7 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { PaymentStep } from "@/components/payment-step";
-import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
+import { submitAssessment } from "@/lib/assessment.functions";
 
 import {
   getSections,
