@@ -16,6 +16,11 @@ export interface ProofInput {
   packageKey: string;
   reference: string;
   note: string;
+  method?: string;
+  amount?: string;
+  paymentDate?: string;
+  clientName?: string;
+  whatsapp?: string;
   file?: { base64: string; contentType: string } | undefined;
 }
 
