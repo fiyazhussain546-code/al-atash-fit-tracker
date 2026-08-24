@@ -144,11 +144,6 @@ export type Database = {
           payment_date: string
           payment_method: string
           payment_note: string
-          payment_method: string
-          payment_amount: string
-          payment_date: string
-          payment_client_name: string
-          payment_whatsapp: string
           payment_proof_path: string
           payment_reference: string
           payment_review_note: string
@@ -176,11 +171,6 @@ export type Database = {
           payment_date?: string
           payment_method?: string
           payment_note?: string
-          payment_method?: string
-          payment_amount?: string
-          payment_date?: string
-          payment_client_name?: string
-          payment_whatsapp?: string
           payment_proof_path?: string
           payment_reference?: string
           payment_review_note?: string
@@ -208,11 +198,6 @@ export type Database = {
           payment_date?: string
           payment_method?: string
           payment_note?: string
-          payment_method?: string
-          payment_amount?: string
-          payment_date?: string
-          payment_client_name?: string
-          payment_whatsapp?: string
           payment_proof_path?: string
           payment_reference?: string
           payment_review_note?: string
