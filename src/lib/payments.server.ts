@@ -16,6 +16,11 @@ export interface ProofInput {
   packageKey: string;
   reference: string;
   note: string;
+  method?: string;
+  amount?: string;
+  paymentDate?: string;
+  clientName?: string;
+  whatsapp?: string;
   file?: { base64: string; contentType: string } | undefined;
 }
 
@@ -54,6 +59,11 @@ export async function attachPaymentProof(input: ProofInput) {
       package_key: input.packageKey,
       payment_reference: input.reference,
       payment_note: input.note,
+      payment_method: input.method ?? "",
+      payment_amount: input.amount ?? "",
+      payment_date: input.paymentDate ?? "",
+      payment_client_name: input.clientName ?? "",
+      payment_whatsapp: input.whatsapp ?? "",
       ...(path ? { payment_proof_path: path } : {}),
       payment_status: "Proof Submitted",
       payment_submitted_at: new Date().toISOString(),

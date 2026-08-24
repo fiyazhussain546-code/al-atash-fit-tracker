@@ -139,6 +139,10 @@ export type Database = {
           name: string
           package_key: string
           payload: Json
+          payment_amount: string
+          payment_client_name: string
+          payment_date: string
+          payment_method: string
           payment_note: string
           payment_proof_path: string
           payment_reference: string
@@ -146,6 +150,7 @@ export type Database = {
           payment_reviewed_at: string | null
           payment_status: string
           payment_submitted_at: string | null
+          payment_whatsapp: string
           phone: string
           submission_id: string
           submitted_at: string
@@ -161,6 +166,10 @@ export type Database = {
           name?: string
           package_key?: string
           payload?: Json
+          payment_amount?: string
+          payment_client_name?: string
+          payment_date?: string
+          payment_method?: string
           payment_note?: string
           payment_proof_path?: string
           payment_reference?: string
@@ -168,6 +177,7 @@ export type Database = {
           payment_reviewed_at?: string | null
           payment_status?: string
           payment_submitted_at?: string | null
+          payment_whatsapp?: string
           phone?: string
           submission_id: string
           submitted_at?: string
@@ -183,6 +193,10 @@ export type Database = {
           name?: string
           package_key?: string
           payload?: Json
+          payment_amount?: string
+          payment_client_name?: string
+          payment_date?: string
+          payment_method?: string
           payment_note?: string
           payment_proof_path?: string
           payment_reference?: string
@@ -190,6 +204,7 @@ export type Database = {
           payment_reviewed_at?: string | null
           payment_status?: string
           payment_submitted_at?: string | null
+          payment_whatsapp?: string
           phone?: string
           submission_id?: string
           submitted_at?: string

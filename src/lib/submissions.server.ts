@@ -18,6 +18,11 @@ export interface StoredSubmission {
   paymentSubmittedAt: string;
   paymentReviewedAt: string;
   paymentReviewNote: string;
+  paymentMethod: string;
+  paymentAmount: string;
+  paymentDate: string;
+  paymentClientName: string;
+  paymentWhatsapp: string;
   data: Record<string, string | string[] | boolean>;
 }
 
@@ -56,7 +61,7 @@ export async function listSubmissions(): Promise<StoredSubmission[]> {
   const { data, error } = await supabaseAdmin
     .from("submissions")
     .select(
-      "id, submission_id, form_type, submitted_at, name, phone, city, age, bmi, payload, package_key, payment_status, payment_reference, payment_note, payment_proof_path, payment_submitted_at, payment_reviewed_at, payment_review_note",
+      "id, submission_id, form_type, submitted_at, name, phone, city, age, bmi, payload, package_key, payment_status, payment_reference, payment_note, payment_proof_path, payment_submitted_at, payment_reviewed_at, payment_review_note, payment_method, payment_amount, payment_date, payment_client_name, payment_whatsapp",
     )
     .order("submitted_at", { ascending: false })
     .limit(2000);
@@ -79,6 +84,11 @@ export async function listSubmissions(): Promise<StoredSubmission[]> {
     paymentSubmittedAt: r.payment_submitted_at ?? "",
     paymentReviewedAt: r.payment_reviewed_at ?? "",
     paymentReviewNote: r.payment_review_note ?? "",
+    paymentMethod: r.payment_method ?? "",
+    paymentAmount: r.payment_amount ?? "",
+    paymentDate: r.payment_date ?? "",
+    paymentClientName: r.payment_client_name ?? "",
+    paymentWhatsapp: r.payment_whatsapp ?? "",
     data: (r.payload ?? {}) as Record<string, string | string[] | boolean>,
   }));
 }
