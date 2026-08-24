@@ -12,11 +12,26 @@ export const getPublicPackages = createServerFn({ method: "POST" }).handler(asyn
   }
 });
 
+export const getPaymentInfo = createServerFn({ method: "POST" }).handler(async () => {
+  const { getPaymentChannels } = await import("@/lib/settings.server");
+  const { DEFAULT_PAYMENT_CHANNELS } = await import("@/lib/payment-channels");
+  try {
+    return await getPaymentChannels();
+  } catch {
+    return DEFAULT_PAYMENT_CHANNELS;
+  }
+});
+
 const proofSchema = z.object({
   submissionId: z.string().min(6).max(64),
   packageKey: z.string().min(1).max(40),
   reference: z.string().max(120).default(""),
   note: z.string().max(600).default(""),
+  method: z.string().max(40).default(""),
+  amount: z.string().max(30).default(""),
+  paymentDate: z.string().max(30).default(""),
+  clientName: z.string().max(120).default(""),
+  whatsapp: z.string().max(40).default(""),
   file: z
     .object({ base64: z.string().min(1).max(7_000_000), contentType: z.string().min(3).max(80) })
     .optional(),
