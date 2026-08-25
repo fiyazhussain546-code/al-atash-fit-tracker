@@ -29,7 +29,14 @@ import {
   adminListDietPlans,
   adminSaveDietPlan,
   adminGenerateDietDraft,
+  adminGetPaymentChannels,
+  adminSavePaymentChannels,
 } from "@/lib/admin.functions";
+import {
+  DEFAULT_PAYMENT_CHANNELS,
+  methodLabel,
+  type PaymentChannelSettings,
+} from "@/lib/payment-channels";
 import { allFields, type AssessmentType } from "@/lib/assessment-schema";
 import {
   DEFAULT_PACKAGE_SETTINGS,
@@ -74,6 +81,11 @@ interface Submission {
   paymentSubmittedAt: string;
   paymentReviewedAt: string;
   paymentReviewNote: string;
+  paymentMethod: string;
+  paymentAmount: string;
+  paymentDate: string;
+  paymentClientName: string;
+  paymentWhatsapp: string;
   data: Record<string, string | string[] | boolean>;
 }
 
@@ -162,6 +174,8 @@ function AdminPage() {
   const [planBusy, setPlanBusy] = useState(false);
   const [planError, setPlanError] = useState("");
   const [planMsg, setPlanMsg] = useState("");
+  const [dateFilter, setDateFilter] = useState("");
+  const [channels, setChannels] = useState<PaymentChannelSettings>(DEFAULT_PAYMENT_CHANNELS);
 
   const login = useServerFn(adminLogin);
   const list = useServerFn(adminListSubmissions);
@@ -174,6 +188,8 @@ function AdminPage() {
   const listPlans = useServerFn(adminListDietPlans);
   const savePlan = useServerFn(adminSaveDietPlan);
   const generateDraft = useServerFn(adminGenerateDietDraft);
+  const getChannels = useServerFn(adminGetPaymentChannels);
+  const saveChannels = useServerFn(adminSavePaymentChannels);
   const [aiBusy, setAiBusy] = useState(false);
 
   useEffect(() => {
@@ -230,6 +246,8 @@ function AdminPage() {
       try {
         const res = await getPackages({ data: { token } });
         if (active && res.ok) setSettings(res.settings as PackageSettings);
+        const ch = await getChannels({ data: { token } });
+        if (active && ch.ok) setChannels(ch.channels as PaymentChannelSettings);
       } catch {
         /* keep defaults */
       }
@@ -237,7 +255,7 @@ function AdminPage() {
     return () => {
       active = false;
     };
-  }, [token, getPackages]);
+  }, [token, getPackages, getChannels]);
 
   const loadPlans = useMemo(
     () => async (t: string) => {
@@ -448,7 +466,8 @@ function AdminPage() {
     setSettingsMsg("");
     try {
       const res = await savePackages({ data: { token, settings } });
-      setSettingsMsg(res.ok ? "Package settings saved." : res.error);
+      const ch = await saveChannels({ data: { token, channels } });
+      setSettingsMsg(res.ok && ch.ok ? "Settings saved." : res.error || ch.error);
     } catch (err) {
       setSettingsMsg(err instanceof Error ? err.message : "Could not save packages.");
     } finally {
@@ -463,8 +482,12 @@ function AdminPage() {
     }));
   }
 
+  const matchesDate = (s: Submission) =>
+    !dateFilter || (s.submittedAt ? s.submittedAt.slice(0, 10) === dateFilter : false);
+
   const filtered = submissions.filter((s) => {
     if (typeFilter !== "All" && s.type !== typeFilter) return false;
+    if (!matchesDate(s)) return false;
     if (statusFilter !== "All" && (s.paymentStatus || "Pending") !== statusFilter) return false;
     if (!query.trim()) return true;
     const q = query.toLowerCase();
@@ -473,6 +496,8 @@ function AdminPage() {
 
   const filteredPlans = submissions.filter((s) => {
     if (typeFilter !== "All" && s.type !== typeFilter) return false;
+    if (!matchesDate(s)) return false;
+    if (statusFilter !== "All" && (s.paymentStatus || "Pending") !== statusFilter) return false;
     if (planFilter !== "All" && planFor(s.recordId).status !== planFilter) return false;
     if (!query.trim()) return true;
     const q = query.toLowerCase();
@@ -684,6 +709,18 @@ function AdminPage() {
               aria-label="Search submissions"
             />
           </div>
+          <Input
+            type="date"
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value)}
+            aria-label="Filter by submission date"
+            className="w-auto"
+          />
+          {dateFilter && (
+            <Button variant="ghost" size="sm" onClick={() => setDateFilter("")}>
+              Clear date
+            </Button>
+          )}
           <div className="flex gap-1.5">
             {["All", "Child", "Female", "Male"].map((t) => (
               <button
@@ -698,6 +735,24 @@ function AdminPage() {
               </button>
             ))}
           </div>
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-center gap-1.5">
+          <span className="mr-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Payment
+          </span>
+          {["All", ...PAYMENT_STATUSES].map((s) => (
+            <button
+              key={s}
+              onClick={() => setStatusFilter(s)}
+              className={cn(
+                "rounded-full border px-3 py-1 text-xs transition-colors",
+                statusFilter === s ? "border-brand bg-brand text-primary-foreground" : "hover:bg-secondary",
+              )}
+            >
+              {s}
+            </button>
+          ))}
         </div>
 
         {tab === "plans" ? (
@@ -807,24 +862,6 @@ function AdminPage() {
           </>
         ) : (
           <>
-        <div className="mt-3 flex flex-wrap items-center gap-1.5">
-
-          <span className="mr-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Payment
-          </span>
-          {["All", ...PAYMENT_STATUSES].map((s) => (
-            <button
-              key={s}
-              onClick={() => setStatusFilter(s)}
-              className={cn(
-                "rounded-full border px-3 py-1 text-xs transition-colors",
-                statusFilter === s ? "border-brand bg-brand text-primary-foreground" : "hover:bg-secondary",
-              )}
-            >
-              {s}
-            </button>
-          ))}
-        </div>
 
         <div className="mt-5 overflow-x-auto rounded-2xl border bg-card">
           <table className="w-full text-left text-sm">
@@ -937,6 +974,26 @@ function AdminPage() {
                 <div>
                   <dt className="font-semibold">Reference</dt>
                   <dd className="text-muted-foreground">{selected.paymentReference || "—"}</dd>
+                </div>
+                <div>
+                  <dt className="font-semibold">Payment method</dt>
+                  <dd className="text-muted-foreground">{methodLabel(selected.paymentMethod)}</dd>
+                </div>
+                <div>
+                  <dt className="font-semibold">Amount paid</dt>
+                  <dd className="text-muted-foreground">{selected.paymentAmount || "—"}</dd>
+                </div>
+                <div>
+                  <dt className="font-semibold">Payment date</dt>
+                  <dd className="text-muted-foreground">{selected.paymentDate || "—"}</dd>
+                </div>
+                <div>
+                  <dt className="font-semibold">Name on payment</dt>
+                  <dd className="text-muted-foreground">{selected.paymentClientName || "—"}</dd>
+                </div>
+                <div>
+                  <dt className="font-semibold">WhatsApp</dt>
+                  <dd className="text-muted-foreground">{selected.paymentWhatsapp || selected.phone || "—"}</dd>
                 </div>
                 <div>
                   <dt className="font-semibold">Proof submitted</dt>
@@ -1061,6 +1118,67 @@ function AdminPage() {
                   value={settings.paymentInstructions}
                   onChange={(e) => setSettings((p) => ({ ...p, paymentInstructions: e.target.value }))}
                 />
+              </div>
+            </div>
+
+            <div className="mt-6 rounded-2xl border p-4">
+              <h3 className="font-display text-base font-bold text-brand-dark">
+                Payment details shown to clients
+              </h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Bank, wallet and WhatsApp details. Leave a field empty to hide it from clients.
+              </p>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {(
+                  [
+                    ["serviceFee", "Initial service fee"],
+                    ["currency", "Currency label"],
+                    ["bankName", "Bank name"],
+                    ["bankAccountTitle", "Bank account title"],
+                    ["bankAccountNumber", "Bank account number"],
+                    ["bankIban", "IBAN"],
+                    ["easypaisaTitle", "Easypaisa title"],
+                    ["easypaisaNumber", "Easypaisa number"],
+                    ["jazzcashTitle", "JazzCash title"],
+                    ["jazzcashNumber", "JazzCash number"],
+                    ["whatsappNumber", "WhatsApp number (e.g. 923001234567)"],
+                  ] as const
+                ).map(([field, label]) => (
+                  <div key={field} className="grid gap-1.5">
+                    <label className="text-xs font-semibold text-muted-foreground">{label}</label>
+                    <Input
+                      value={field === "serviceFee" ? channels.serviceFee : (channels[field] as string)}
+                      type={field === "serviceFee" ? "number" : "text"}
+                      maxLength={120}
+                      onChange={(e) =>
+                        setChannels((prev) => ({
+                          ...prev,
+                          [field]: field === "serviceFee" ? Number(e.target.value) || 0 : e.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                ))}
+              </div>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <div className="grid gap-1.5">
+                  <label className="text-xs font-semibold text-muted-foreground">Payment note (English)</label>
+                  <Textarea
+                    rows={3}
+                    maxLength={1000}
+                    value={channels.noteEn}
+                    onChange={(e) => setChannels((p) => ({ ...p, noteEn: e.target.value }))}
+                  />
+                </div>
+                <div className="grid gap-1.5">
+                  <label className="text-xs font-semibold text-muted-foreground">Payment note (Urdu)</label>
+                  <Textarea
+                    rows={3}
+                    maxLength={1000}
+                    value={channels.noteUr}
+                    onChange={(e) => setChannels((p) => ({ ...p, noteUr: e.target.value }))}
+                  />
+                </div>
               </div>
             </div>
 
