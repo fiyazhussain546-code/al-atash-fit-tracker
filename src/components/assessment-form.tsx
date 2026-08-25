@@ -268,7 +268,10 @@ export function AssessmentForm({ type }: { type: AssessmentType }) {
             Please save this ID. Our team will contact you on the number you provided.
           </p>
         </div>
-        <PaymentStep submissionId={result.submissionId} />
+        <PaymentStep
+          submissionId={result.submissionId}
+          clientName={typeof values["full_name"] === "string" ? values["full_name"] : ""}
+        />
         <div className="mt-6 flex justify-center gap-3">
           <Button asChild variant="outline">
             <Link to="/">Back to home</Link>

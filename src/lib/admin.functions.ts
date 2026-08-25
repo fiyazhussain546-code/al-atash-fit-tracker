@@ -282,3 +282,53 @@ export const adminGenerateDietDraft = createServerFn({ method: "POST" })
       };
     }
   });
+
+const channelsSchema = z.object({
+  serviceFee: z.number().min(0).max(10_000_000),
+  currency: z.string().min(1).max(10),
+  bankName: z.string().max(80).default(""),
+  bankAccountTitle: z.string().max(120).default(""),
+  bankAccountNumber: z.string().max(60).default(""),
+  bankIban: z.string().max(60).default(""),
+  easypaisaTitle: z.string().max(120).default(""),
+  easypaisaNumber: z.string().max(40).default(""),
+  jazzcashTitle: z.string().max(120).default(""),
+  jazzcashNumber: z.string().max(40).default(""),
+  whatsappNumber: z.string().max(40).default(""),
+  noteEn: z.string().max(1000).default(""),
+  noteUr: z.string().max(1000).default(""),
+});
+
+export const adminGetPaymentChannels = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => z.object({ token: tokenRule }).parse(input))
+  .handler(async ({ data }) => {
+    const { verifyToken } = await import("@/lib/admin-auth.server");
+    const { DEFAULT_PAYMENT_CHANNELS } = await import("@/lib/payment-channels");
+    if (!(await verifyToken(data.token))) {
+      return { ok: false as const, error: "Session expired.", channels: DEFAULT_PAYMENT_CHANNELS };
+    }
+    const { getPaymentChannels } = await import("@/lib/settings.server");
+    try {
+      return { ok: true as const, error: "", channels: await getPaymentChannels() };
+    } catch (err) {
+      return {
+        ok: false as const,
+        error: err instanceof Error ? err.message : "Could not load payment details.",
+        channels: DEFAULT_PAYMENT_CHANNELS,
+      };
+    }
+  });
+
+export const adminSavePaymentChannels = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => z.object({ token: tokenRule, channels: channelsSchema }).parse(input))
+  .handler(async ({ data }) => {
+    const { verifyToken } = await import("@/lib/admin-auth.server");
+    if (!(await verifyToken(data.token))) return { ok: false as const, error: "Session expired." };
+    const { savePaymentChannels } = await import("@/lib/settings.server");
+    try {
+      await savePaymentChannels(data.channels);
+      return { ok: true as const, error: "" };
+    } catch (err) {
+      return { ok: false as const, error: err instanceof Error ? err.message : "Could not save payment details." };
+    }
+  });
