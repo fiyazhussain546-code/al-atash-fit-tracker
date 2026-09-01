@@ -10,6 +10,8 @@ export interface PaymentChannelSettings {
   bankIban: string;
   easypaisaTitle: string;
   easypaisaNumber: string;
+  /** Optional Easypaisa (TMFB) IBAN */
+  easypaisaIban?: string;
   jazzcashTitle: string;
   jazzcashNumber: string;
   /** International format without +, e.g. 923001234567 */
@@ -22,14 +24,15 @@ export const DEFAULT_PAYMENT_CHANNELS: PaymentChannelSettings = {
   serviceFee: 500,
   currency: "PKR",
   bankName: "Meezan Bank",
-  bankAccountTitle: "AL-ATASH FIT",
-  bankAccountNumber: "",
-  bankIban: "",
-  easypaisaTitle: "AL-ATASH FIT",
-  easypaisaNumber: "",
-  jazzcashTitle: "AL-ATASH FIT",
+  bankAccountTitle: "FIYAZ HUSSAIN",
+  bankAccountNumber: "05090113582186",
+  bankIban: "PK15MEZN0005090113582186",
+  easypaisaTitle: "Fayyaz Hussain",
+  easypaisaNumber: "03433672409",
+  easypaisaIban: "PK45TMFB0000000039229237",
+  jazzcashTitle: "",
   jazzcashNumber: "",
-  whatsappNumber: "",
+  whatsappNumber: "923433672409",
   noteEn: "Please upload your payment screenshot after completing payment. Our team verifies payments within 24 hours.",
   noteUr: "ادائیگی مکمل کرنے کے بعد اپنی payment screenshot یہاں upload کریں۔ ہماری ٹیم 24 گھنٹوں میں تصدیق کرے گی۔",
 };
@@ -37,11 +40,11 @@ export const DEFAULT_PAYMENT_CHANNELS: PaymentChannelSettings = {
 export const PAYMENT_METHODS: { key: PaymentMethodKey; en: string; ur: string }[] = [
   { key: "meezan", en: "Meezan Bank transfer", ur: "میزان بینک ٹرانسفر" },
   { key: "easypaisa", en: "Easypaisa", ur: "ایزی پیسہ" },
-  { key: "jazzcash", en: "JazzCash", ur: "جاز کیش" },
   { key: "whatsapp", en: "Other / sent on WhatsApp", ur: "دیگر / واٹس ایپ پر بھیجا" },
 ];
 
 export function methodLabel(key: string) {
+  if (key === "jazzcash") return "JazzCash";
   return PAYMENT_METHODS.find((m) => m.key === key)?.en ?? (key || "—");
 }
 

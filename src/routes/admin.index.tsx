@@ -1139,6 +1139,7 @@ function AdminPage() {
                     ["bankIban", "IBAN"],
                     ["easypaisaTitle", "Easypaisa title"],
                     ["easypaisaNumber", "Easypaisa number"],
+                    ["easypaisaIban", "Easypaisa IBAN"],
                     ["jazzcashTitle", "JazzCash title"],
                     ["jazzcashNumber", "JazzCash number"],
                     ["whatsappNumber", "WhatsApp number (e.g. 923001234567)"],

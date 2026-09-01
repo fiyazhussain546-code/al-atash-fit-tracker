@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Building2, CheckCircle2, Loader2, MessageCircle, Smartphone, Upload } from "lucide-react";
+import { Building2, Check, CheckCircle2, Copy, Loader2, MessageCircle, Smartphone, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,17 +15,51 @@ import {
   type PaymentChannelSettings,
 } from "@/lib/payment-channels";
 
-function DetailRow({ label, value }: { label: string; value: string }) {
+function CopyRow({ label, value }: { label: string; value: string }) {
+  const [copied, setCopied] = useState(false);
   if (!value) return null;
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(value);
+    } catch {
+      /* clipboard unavailable */
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1800);
+  }
   return (
-    <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border/60 py-1.5 last:border-0">
+    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 py-2 last:border-0">
       <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</span>
-      <span className="font-mono text-sm font-semibold text-foreground">{value}</span>
+      <span className="flex items-center gap-2">
+        <span className="font-mono text-sm font-semibold text-foreground break-all">{value}</span>
+        <Button type="button" size="sm" variant="outline" className="h-7 px-2" onClick={copy}>
+          {copied ? <Check className="size-3.5" aria-hidden /> : <Copy className="size-3.5" aria-hidden />}
+          <span className="text-xs">{copied ? "Copied ✓ / کاپی ہو گیا ✓" : "Copy"}</span>
+        </Button>
+      </span>
     </div>
   );
 }
 
-export function PaymentStep({ submissionId, clientName = "" }: { submissionId: string; clientName?: string }) {
+function TextRow({ label, value }: { label: string; value: string }) {
+  if (!value) return null;
+  return (
+    <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border/60 py-2 last:border-0">
+      <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</span>
+      <span className="text-sm font-semibold text-foreground">{value}</span>
+    </div>
+  );
+}
+
+export function PaymentStep({
+  submissionId,
+  clientName = "",
+  clientPhone = "",
+}: {
+  submissionId: string;
+  clientName?: string;
+  clientPhone?: string;
+}) {
   const loadPackages = useServerFn(getPublicPackages);
   const loadChannels = useServerFn(getPaymentInfo);
   const submitProof = useServerFn(submitPaymentProof);
@@ -36,7 +70,6 @@ export function PaymentStep({ submissionId, clientName = "" }: { submissionId: s
   const [amount, setAmount] = useState("");
   const [payDate, setPayDate] = useState("");
   const [payerName, setPayerName] = useState(clientName);
-  const [whatsapp, setWhatsapp] = useState("");
   const [reference, setReference] = useState("");
   const [note, setNote] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -52,7 +85,6 @@ export function PaymentStep({ submissionId, clientName = "" }: { submissionId: s
         if (!active) return;
         setSettings(pkgs as PackageSettings);
         setChannels(chans as PaymentChannelSettings);
-        setAmount(String((chans as PaymentChannelSettings).serviceFee));
       } catch {
         /* keep defaults */
       }
@@ -62,13 +94,34 @@ export function PaymentStep({ submissionId, clientName = "" }: { submissionId: s
     };
   }, [loadPackages, loadChannels]);
 
-  const waLink = whatsappProofLink(channels, {
-    name: payerName || clientName,
-    submissionId,
-    amount,
-    method,
-    transactionId: reference,
-  });
+  const selectedPkg = settings.packages.find((p) => p.key === selected);
+
+  useEffect(() => {
+    if (selectedPkg) setAmount(String(selectedPkg.price));
+  }, [selectedPkg]);
+
+  const waDigits = (channels.whatsappNumber || DEFAULT_PAYMENT_CHANNELS.whatsappNumber).replace(/\D/g, "");
+  const helpMessage = encodeURIComponent(
+    [
+      "Assalam-o-Alaikum,",
+      `I have completed my AL-ATASH FIT assessment and selected the ${selectedPkg?.name ?? "-"} plan.`,
+      `Submission ID: ${submissionId}`,
+      "I need help regarding payment.",
+      "Please guide me.",
+    ].join("\n"),
+  );
+  const waHelpLink = waDigits ? `https://wa.me/${waDigits}?text=${helpMessage}` : "";
+
+  const waProofLink = whatsappProofLink(
+    { ...channels, whatsappNumber: waDigits },
+    {
+      name: payerName || clientName,
+      submissionId,
+      amount,
+      method,
+      transactionId: reference,
+    },
+  );
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -98,7 +151,7 @@ export function PaymentStep({ submissionId, clientName = "" }: { submissionId: s
           amount,
           paymentDate: payDate,
           clientName: payerName,
-          whatsapp,
+          whatsapp: clientPhone,
           ...(payload ? { file: payload } : {}),
         },
       });
@@ -114,20 +167,23 @@ export function PaymentStep({ submissionId, clientName = "" }: { submissionId: s
   if (done) {
     return (
       <div className="mt-8 rounded-2xl border border-brand/30 bg-brand-soft/40 p-6 text-left">
-        <div className="flex items-center gap-2 font-semibold text-brand-dark">
-          <CheckCircle2 className="size-5" aria-hidden /> Payment proof received
+        <div className="flex items-center gap-2 font-display text-lg font-extrabold text-brand-dark">
+          <CheckCircle2 className="size-5" aria-hidden /> Payment Proof Submitted Successfully
         </div>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Status: <strong>Proof Submitted</strong>. Our team will verify your payment, then your plan is prepared
-          and released.
+        <Urdu className="mt-1 block font-semibold text-brand-dark">ادائیگی کا ثبوت کامیابی سے جمع ہو گیا ہے</Urdu>
+        <p className="mt-3 text-sm text-muted-foreground">
+          Your payment proof has been submitted for verification.
         </p>
-        <Urdu className="mt-1 block text-sm text-muted-foreground">
-          آپ کی ادائیگی کی تصدیق کے بعد ہماری ٹیم آپ سے رابطہ کرے گی اور آپ کا پلان تیار کیا جائے گا۔
+        <Urdu className="block text-sm text-muted-foreground">
+          آپ کی ادائیگی کا ثبوت تصدیق کے لیے جمع کر دیا گیا ہے۔
         </Urdu>
-        {waLink && (
+        <p className="mt-2 text-sm text-muted-foreground">
+          Our team will verify your payment and update your plan status.
+        </p>
+        {waProofLink && (
           <Button asChild variant="outline" className="mt-4">
-            <a href={waLink} target="_blank" rel="noopener noreferrer">
-              <MessageCircle className="size-4" /> Send payment proof on WhatsApp
+            <a href={waProofLink} target="_blank" rel="noopener noreferrer">
+              <MessageCircle className="size-4" /> Contact on WhatsApp / واٹس ایپ پر رابطہ کریں
             </a>
           </Button>
         )}
@@ -137,80 +193,11 @@ export function PaymentStep({ submissionId, clientName = "" }: { submissionId: s
 
   return (
     <div className="mt-8 text-left">
-      {/* Payment information */}
+      {/* Package selection */}
       <section className="rounded-2xl border bg-card p-5 sm:p-6">
-        <h2 className="font-display text-lg font-extrabold text-brand-dark">Payment Information</h2>
-        <Urdu className="mt-1 block text-sm text-muted-foreground">ادائیگی کی معلومات</Urdu>
-        <div className="mt-3 rounded-xl bg-brand-soft/50 p-3">
-          <p className="text-sm font-semibold text-brand-dark">
-            Initial service fee: {channels.currency} {channels.serviceFee.toLocaleString("en-PK")}
-          </p>
-          <Urdu className="block text-sm text-muted-foreground">
-            ابتدائی سروس فیس: {channels.currency} {channels.serviceFee.toLocaleString("en-PK")}
-          </Urdu>
-        </div>
-
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <div className="rounded-2xl border p-4">
-            <div className="flex items-center gap-2 font-semibold">
-              <Building2 className="size-4 text-brand" aria-hidden /> {channels.bankName}
-            </div>
-            <div className="mt-2">
-              <DetailRow label="Account title" value={channels.bankAccountTitle} />
-              <DetailRow label="Account no." value={channels.bankAccountNumber} />
-              <DetailRow label="IBAN" value={channels.bankIban} />
-            </div>
-            {!channels.bankAccountNumber && !channels.bankIban && (
-              <p className="mt-2 text-xs text-muted-foreground">
-                Bank details will be shared on WhatsApp. / بینک تفصیلات واٹس ایپ پر بھیجی جائیں گی۔
-              </p>
-            )}
-          </div>
-          <div className="rounded-2xl border p-4">
-            <div className="flex items-center gap-2 font-semibold">
-              <Smartphone className="size-4 text-brand" aria-hidden /> Easypaisa / JazzCash
-            </div>
-            <div className="mt-2">
-              <DetailRow label="Easypaisa" value={channels.easypaisaNumber} />
-              <DetailRow label="Title" value={channels.easypaisaNumber ? channels.easypaisaTitle : ""} />
-              <DetailRow label="JazzCash" value={channels.jazzcashNumber} />
-              <DetailRow label="Title" value={channels.jazzcashNumber ? channels.jazzcashTitle : ""} />
-            </div>
-            {!channels.easypaisaNumber && !channels.jazzcashNumber && (
-              <p className="mt-2 text-xs text-muted-foreground">
-                Mobile wallet numbers will be shared on WhatsApp. / موبائل والیٹ نمبر واٹس ایپ پر بھیجے جائیں گے۔
-              </p>
-            )}
-          </div>
-        </div>
-
-        <p className="mt-4 text-sm text-muted-foreground">{channels.noteEn}</p>
-        <Urdu className="mt-1 block text-sm text-muted-foreground">{channels.noteUr}</Urdu>
-
-        {waLink && (
-          <Button asChild variant="outline" className="mt-4 w-full sm:w-auto">
-            <a href={waLink} target="_blank" rel="noopener noreferrer">
-              <MessageCircle className="size-4" /> Send Payment Proof on WhatsApp
-            </a>
-          </Button>
-        )}
-      </section>
-
-      {/* Proof form */}
-      <form onSubmit={handleSubmit} className="mt-5 rounded-2xl border bg-card p-5 sm:p-6">
-        <h2 className="font-display text-lg font-extrabold text-brand-dark">Payment Proof</h2>
-        <Urdu className="mt-1 block text-sm text-muted-foreground">ادائیگی کا ثبوت</Urdu>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Please upload your payment screenshot after completing payment.
-        </p>
-        <Urdu className="block text-sm text-muted-foreground">
-          ادائیگی مکمل کرنے کے بعد اپنی payment screenshot یہاں upload کریں۔
-        </Urdu>
-
-        <p className="mt-4 text-sm font-semibold">
-          Choose your plan package <span className="font-normal text-muted-foreground">/ پیکج منتخب کریں</span>
-        </p>
-        <div className="mt-2 grid gap-3 sm:grid-cols-2">
+        <h2 className="font-display text-lg font-extrabold text-brand-dark">Choose your plan package</h2>
+        <Urdu className="mt-1 block text-sm text-muted-foreground">اپنا پیکج منتخب کریں</Urdu>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
           {settings.packages.map((p) => (
             <button
               type="button"
@@ -231,6 +218,64 @@ export function PaymentStep({ submissionId, clientName = "" }: { submissionId: s
             </button>
           ))}
         </div>
+
+        {/* Payment details appear directly under the selected package */}
+        {selectedPkg && (
+          <div className="mt-5 rounded-2xl border border-brand/30 bg-brand-soft/30 p-4 sm:p-5">
+            <h3 className="font-display text-base font-extrabold text-brand-dark">
+              Payment Details <span className="font-normal">/</span> <Urdu>ادائیگی کی تفصیلات</Urdu>
+            </h3>
+            <p className="mt-1 text-sm font-semibold text-brand-dark">
+              {selectedPkg.name} — {formatPrice(selectedPkg, settings.currency)} · {selectedPkg.durationLabel}
+            </p>
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-2xl border bg-card p-4">
+                <div className="flex items-center gap-2 font-semibold">
+                  <Smartphone className="size-4 text-brand" aria-hidden /> Easypaisa
+                </div>
+                <div className="mt-2">
+                  <TextRow label="Account title" value={channels.easypaisaTitle} />
+                  <CopyRow label="Account number" value={channels.easypaisaNumber} />
+                  <CopyRow label="IBAN" value={channels.easypaisaIban ?? ""} />
+                </div>
+              </div>
+              <div className="rounded-2xl border bg-card p-4">
+                <div className="flex items-center gap-2 font-semibold">
+                  <Building2 className="size-4 text-brand" aria-hidden /> {channels.bankName}
+                </div>
+                <div className="mt-2">
+                  <TextRow label="Account title" value={channels.bankAccountTitle} />
+                  <CopyRow label="Account number" value={channels.bankAccountNumber} />
+                  <CopyRow label="IBAN" value={channels.bankIban} />
+                </div>
+              </div>
+            </div>
+
+            {waHelpLink && (
+              <Button asChild className="mt-4 w-full sm:w-auto">
+                <a href={waHelpLink} target="_blank" rel="noopener noreferrer">
+                  <MessageCircle className="size-4" /> Contact on WhatsApp / واٹس ایپ پر رابطہ کریں
+                </a>
+              </Button>
+            )}
+
+            <div className="mt-4 space-y-1 text-sm text-muted-foreground">
+              <p>Please complete payment using the selected payment method, then upload your payment screenshot below.</p>
+              <Urdu className="block">
+                ادائیگی منتخب کردہ طریقے سے مکمل کریں، پھر نیچے ادائیگی کا اسکرین شاٹ اپلوڈ کریں۔
+              </Urdu>
+              <p className="pt-1">If you need help, contact us on WhatsApp.</p>
+              <Urdu className="block">اگر ادائیگی کے بارے میں کوئی مدد چاہیے تو واٹس ایپ پر رابطہ کریں۔</Urdu>
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* Proof form */}
+      <form onSubmit={handleSubmit} className="mt-5 rounded-2xl border bg-card p-5 sm:p-6">
+        <h2 className="font-display text-lg font-extrabold text-brand-dark">Payment Proof</h2>
+        <Urdu className="mt-1 block text-sm text-muted-foreground">ادائیگی کا ثبوت</Urdu>
 
         <p className="mt-4 text-sm font-semibold">
           Payment method <span className="font-normal text-muted-foreground">/ ادائیگی کا طریقہ</span>
@@ -258,20 +303,6 @@ export function PaymentStep({ submissionId, clientName = "" }: { submissionId: s
               Client name / نام
             </label>
             <Input id="payername" value={payerName} onChange={(e) => setPayerName(e.target.value)} maxLength={120} />
-          </div>
-          <div>
-            <label htmlFor="wa" className="mb-1.5 block text-sm font-semibold">
-              WhatsApp number / واٹس ایپ نمبر
-            </label>
-            <Input
-              id="wa"
-              type="tel"
-              inputMode="tel"
-              value={whatsapp}
-              onChange={(e) => setWhatsapp(e.target.value)}
-              maxLength={40}
-              placeholder="03xx xxxxxxx"
-            />
           </div>
           <div>
             <label htmlFor="amt" className="mb-1.5 block text-sm font-semibold">
@@ -326,9 +357,9 @@ export function PaymentStep({ submissionId, clientName = "" }: { submissionId: s
           {busy ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />} Submit payment proof
         </Button>
 
-        {waLink && (
+        {waProofLink && (
           <Button asChild variant="outline" className="mt-2 w-full">
-            <a href={waLink} target="_blank" rel="noopener noreferrer">
+            <a href={waProofLink} target="_blank" rel="noopener noreferrer">
               <MessageCircle className="size-4" /> Send Payment Proof on WhatsApp
             </a>
           </Button>

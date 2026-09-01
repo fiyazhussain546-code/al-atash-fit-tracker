@@ -45,7 +45,11 @@ export async function getPaymentChannels(): Promise<
     .maybeSingle();
   if (error) throw new Error(error.message);
   const value = (data?.value ?? {}) as Partial<import("@/lib/payment-channels").PaymentChannelSettings>;
-  return { ...DEFAULT_PAYMENT_CHANNELS, ...value };
+  // Ignore blank saved values so real defaults stay visible to customers
+  const clean = Object.fromEntries(
+    Object.entries(value).filter(([, v]) => v !== null && v !== undefined && v !== ""),
+  ) as Partial<import("@/lib/payment-channels").PaymentChannelSettings>;
+  return { ...DEFAULT_PAYMENT_CHANNELS, ...clean };
 }
 
 export async function savePaymentChannels(
