@@ -40,11 +40,11 @@ export const DEFAULT_PAYMENT_CHANNELS: PaymentChannelSettings = {
 export const PAYMENT_METHODS: { key: PaymentMethodKey; en: string; ur: string }[] = [
   { key: "meezan", en: "Meezan Bank transfer", ur: "میزان بینک ٹرانسفر" },
   { key: "easypaisa", en: "Easypaisa", ur: "ایزی پیسہ" },
-  { key: "jazzcash", en: "JazzCash", ur: "جاز کیش" },
   { key: "whatsapp", en: "Other / sent on WhatsApp", ur: "دیگر / واٹس ایپ پر بھیجا" },
 ];
 
 export function methodLabel(key: string) {
+  if (key === "jazzcash") return "JazzCash";
   return PAYMENT_METHODS.find((m) => m.key === key)?.en ?? (key || "—");
 }
 
