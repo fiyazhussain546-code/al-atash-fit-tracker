@@ -10,6 +10,8 @@ export interface PaymentChannelSettings {
   bankIban: string;
   easypaisaTitle: string;
   easypaisaNumber: string;
+  /** Optional Easypaisa (TMFB) IBAN */
+  easypaisaIban?: string;
   jazzcashTitle: string;
   jazzcashNumber: string;
   /** International format without +, e.g. 923001234567 */
