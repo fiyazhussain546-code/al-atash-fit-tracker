@@ -271,6 +271,7 @@ export function AssessmentForm({ type }: { type: AssessmentType }) {
         <PaymentStep
           submissionId={result.submissionId}
           clientName={typeof values["full_name"] === "string" ? values["full_name"] : ""}
+          clientPhone={typeof values["phone"] === "string" ? values["phone"] : ""}
         />
         <div className="mt-6 flex justify-center gap-3">
           <Button asChild variant="outline">
