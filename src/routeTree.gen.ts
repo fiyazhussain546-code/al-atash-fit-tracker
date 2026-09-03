@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AssessmentTypeRouteImport } from './routes/assessment.$type'
+import { Route as ConsultancyIndexRouteImport } from './routes/consultancy.index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -28,35 +29,44 @@ const AssessmentTypeRoute = AssessmentTypeRouteImport.update({
   path: '/assessment/$type',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ConsultancyIndexRoute = ConsultancyIndexRouteImport.update({
+  id: '/consultancy/',
+  path: '/consultancy/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/assessment/$type': typeof AssessmentTypeRoute
   '/admin/': typeof AdminIndexRoute
+  '/consultancy/': typeof ConsultancyIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/assessment/$type': typeof AssessmentTypeRoute
   '/admin': typeof AdminIndexRoute
+  '/consultancy': typeof ConsultancyIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/assessment/$type': typeof AssessmentTypeRoute
   '/admin/': typeof AdminIndexRoute
+  '/consultancy/': typeof ConsultancyIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/assessment/$type' | '/admin/'
+  fullPaths: '/' | '/assessment/$type' | '/admin/' | '/consultancy/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/assessment/$type' | '/admin'
-  id: '__root__' | '/' | '/assessment/$type' | '/admin/'
+  to: '/' | '/assessment/$type' | '/admin' | '/consultancy'
+  id: '__root__' | '/' | '/assessment/$type' | '/admin/' | '/consultancy/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AssessmentTypeRoute: typeof AssessmentTypeRoute
   AdminIndexRoute: typeof AdminIndexRoute
+  ConsultancyIndexRoute: typeof ConsultancyIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -82,6 +92,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AssessmentTypeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/consultancy/': {
+      id: '/consultancy/'
+      path: '/consultancy'
+      fullPath: '/consultancy/'
+      preLoaderRoute: typeof ConsultancyIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -89,6 +106,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AssessmentTypeRoute: AssessmentTypeRoute,
   AdminIndexRoute: AdminIndexRoute,
+  ConsultancyIndexRoute: ConsultancyIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
