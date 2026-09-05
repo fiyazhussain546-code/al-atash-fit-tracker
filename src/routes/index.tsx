@@ -55,13 +55,22 @@ function Index() {
       <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-14">
         <div className="flex items-center justify-between">
           <Logo />
-          <Link
-            to="/admin"
-            className="text-xs font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-          >
-            Staff login
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link
+              to="/consultancy"
+              className="text-xs font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+            >
+              Medical Consultancy
+            </Link>
+            <Link
+              to="/admin"
+              className="text-xs font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+            >
+              Staff login
+            </Link>
+          </div>
         </div>
+
 
         <section className="mt-10 text-center sm:mt-16">
           <span className="inline-flex items-center gap-2 rounded-full border border-brand/25 bg-brand-soft px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wider text-brand-dark">
