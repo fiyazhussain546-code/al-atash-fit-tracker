@@ -128,7 +128,7 @@ function EyeCareAdmin() {
   const load = useServerFn(eyecareLoad);
 
   useEffect(() => {
-    const t = typeof window === "undefined" ? "" : localStorage.getItem(TOKEN_KEY) ?? "";
+    const t = typeof window === "undefined" ? "" : sessionStorage.getItem(TOKEN_KEY) ?? "";
     setToken(t);
     if (!t) {
       setLoading(false);
