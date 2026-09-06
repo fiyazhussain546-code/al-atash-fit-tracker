@@ -629,9 +629,16 @@ function AdminPage() {
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6">
           <Logo compact />
           <div className="flex items-center gap-2">
+            <Link
+              to="/admin/eyecare"
+              className="inline-flex h-9 items-center gap-1.5 rounded-md border px-3 text-xs font-medium text-brand-dark hover:bg-brand-soft"
+            >
+              <Eye className="size-4" /> Eye Care Consultancy
+            </Link>
             <Button variant="outline" size="sm" onClick={() => void load(token)} disabled={busy}>
               <RefreshCw className={cn("size-4", busy && "animate-spin")} /> Refresh
             </Button>
+
             <Button variant="outline" size="sm" onClick={() => setSettingsOpen(true)}>
               <Settings2 className="size-4" /> Packages
             </Button>
