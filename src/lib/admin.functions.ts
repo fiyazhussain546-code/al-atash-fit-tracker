@@ -55,7 +55,7 @@ export const adminChangePassword = createServerFn({ method: "POST" })
     z.object({ token: z.string().min(1).max(500), current: z.string().min(1).max(200), next: passwordRule }).parse(input),
   )
   .handler(async ({ data }) => {
-    const { verifyToken, changePassword, issueToken } = await import("@/lib/admin-auth.server");
+    const { verifyAdmin: verifyToken, changePassword, issueToken } = await import("@/lib/admin-auth.server");
     if (!(await verifyToken(data.token))) return { ok: false as const, error: "Session expired.", token: "" };
     const res = await changePassword(data.current, data.next);
     if (!res.ok) return { ok: false as const, error: res.error, token: "" };
@@ -65,7 +65,7 @@ export const adminChangePassword = createServerFn({ method: "POST" })
 export const adminListSubmissions = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ token: z.string().min(1).max(500) }).parse(input))
   .handler(async ({ data }) => {
-    const { verifyToken } = await import("@/lib/admin-auth.server");
+    const { verifyAdmin: verifyToken } = await import("@/lib/admin-auth.server");
     if (!(await verifyToken(data.token))) {
       return { ok: false as const, error: "Session expired. Please sign in again.", submissions: [] };
     }
@@ -86,7 +86,7 @@ const tokenRule = z.string().min(1).max(500);
 export const adminGetPackages = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ token: tokenRule }).parse(input))
   .handler(async ({ data }) => {
-    const { verifyToken } = await import("@/lib/admin-auth.server");
+    const { verifyAdmin: verifyToken } = await import("@/lib/admin-auth.server");
     const { DEFAULT_PACKAGE_SETTINGS } = await import("@/lib/packages");
     if (!(await verifyToken(data.token))) {
       return { ok: false as const, error: "Session expired.", settings: DEFAULT_PACKAGE_SETTINGS };
@@ -128,7 +128,7 @@ export const adminSavePackages = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data }) => {
-    const { verifyToken } = await import("@/lib/admin-auth.server");
+    const { verifyAdmin: verifyToken } = await import("@/lib/admin-auth.server");
     if (!(await verifyToken(data.token))) return { ok: false as const, error: "Session expired." };
     const { savePackageSettings } = await import("@/lib/settings.server");
     try {
@@ -151,7 +151,7 @@ export const adminReviewPayment = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data }) => {
-    const { verifyToken } = await import("@/lib/admin-auth.server");
+    const { verifyAdmin: verifyToken } = await import("@/lib/admin-auth.server");
     if (!(await verifyToken(data.token))) return { ok: false as const, error: "Session expired." };
     const { reviewPayment } = await import("@/lib/payments.server");
     try {
@@ -165,7 +165,7 @@ export const adminReviewPayment = createServerFn({ method: "POST" })
 export const adminProofUrl = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ token: tokenRule, path: z.string().min(1).max(400) }).parse(input))
   .handler(async ({ data }) => {
-    const { verifyToken } = await import("@/lib/admin-auth.server");
+    const { verifyAdmin: verifyToken } = await import("@/lib/admin-auth.server");
     if (!(await verifyToken(data.token))) return { ok: false as const, error: "Session expired.", url: "" };
     const { signedProofUrl } = await import("@/lib/payments.server");
     try {
@@ -178,7 +178,7 @@ export const adminProofUrl = createServerFn({ method: "POST" })
 export const adminListDietPlans = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ token: tokenRule }).parse(input))
   .handler(async ({ data }) => {
-    const { verifyToken } = await import("@/lib/admin-auth.server");
+    const { verifyAdmin: verifyToken } = await import("@/lib/admin-auth.server");
     if (!(await verifyToken(data.token))) {
       return { ok: false as const, error: "Session expired.", plans: [] };
     }
@@ -230,7 +230,7 @@ const dietPlanSchema = z.object({
 export const adminSaveDietPlan = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ token: tokenRule, plan: dietPlanSchema }).parse(input))
   .handler(async ({ data }) => {
-    const { verifyToken } = await import("@/lib/admin-auth.server");
+    const { verifyAdmin: verifyToken } = await import("@/lib/admin-auth.server");
     const { emptyDietPlan } = await import("@/lib/diet-plans");
     if (!(await verifyToken(data.token))) {
       return { ok: false as const, error: "Session expired.", plan: emptyDietPlan(data.plan.submissionRecordId) };
@@ -275,7 +275,7 @@ export const adminGenerateDietDraft = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data }) => {
-    const { verifyToken } = await import("@/lib/admin-auth.server");
+    const { verifyAdmin: verifyToken } = await import("@/lib/admin-auth.server");
     const { emptyDietPlan } = await import("@/lib/diet-plans");
     if (!(await verifyToken(data.token))) {
       return { ok: false as const, error: "Session expired.", plan: emptyDietPlan(data.recordId) };
@@ -311,7 +311,7 @@ const channelsSchema = z.object({
 export const adminGetPaymentChannels = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ token: tokenRule }).parse(input))
   .handler(async ({ data }) => {
-    const { verifyToken } = await import("@/lib/admin-auth.server");
+    const { verifyAdmin: verifyToken } = await import("@/lib/admin-auth.server");
     const { DEFAULT_PAYMENT_CHANNELS } = await import("@/lib/payment-channels");
     if (!(await verifyToken(data.token))) {
       return { ok: false as const, error: "Session expired.", channels: DEFAULT_PAYMENT_CHANNELS };
@@ -331,7 +331,7 @@ export const adminGetPaymentChannels = createServerFn({ method: "POST" })
 export const adminSavePaymentChannels = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ token: tokenRule, channels: channelsSchema }).parse(input))
   .handler(async ({ data }) => {
-    const { verifyToken } = await import("@/lib/admin-auth.server");
+    const { verifyAdmin: verifyToken } = await import("@/lib/admin-auth.server");
     if (!(await verifyToken(data.token))) return { ok: false as const, error: "Session expired." };
     const { savePaymentChannels } = await import("@/lib/settings.server");
     try {

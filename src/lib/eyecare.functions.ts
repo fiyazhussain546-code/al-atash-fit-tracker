@@ -11,6 +11,13 @@ async function guard(t: string) {
   return verifyToken(t);
 }
 
+/** Admin-only actions: doctors/centres, services & payments, deletions. */
+async function adminGuard(t: string) {
+  const { verifyAdmin } = await import("@/lib/admin-auth.server");
+  return verifyAdmin(t);
+}
+const ADMIN_ONLY = "Only admins can do this. / یہ کام صرف ایڈمن کر سکتا ہے۔";
+
 const nullDate = (v: string) => (v && v.trim() ? v : null);
 
 export const eyecareLoad = createServerFn({ method: "POST" })
@@ -169,7 +176,7 @@ export const eyecareSaveDoctor = createServerFn({ method: "POST" })
       .parse(i),
   )
   .handler(async ({ data }) => {
-    if (!(await guard(data.token))) return { ok: false as const, error: "Session expired." };
+    if (!(await adminGuard(data.token))) return { ok: false as const, error: ADMIN_ONLY };
     const d = data.doctor;
     try {
       const { saveDoctor } = await import("@/lib/eyecare.server");
@@ -349,7 +356,7 @@ export const eyecareSaveService = createServerFn({ method: "POST" })
       .parse(i),
   )
   .handler(async ({ data }) => {
-    if (!(await guard(data.token))) return { ok: false as const, error: "Session expired." };
+    if (!(await adminGuard(data.token))) return { ok: false as const, error: ADMIN_ONLY };
     const sv = data.service;
     try {
       const { saveChild } = await import("@/lib/eyecare.server");
@@ -429,7 +436,7 @@ const DELETABLE = [
 export const eyecareDelete = createServerFn({ method: "POST" })
   .inputValidator((i: unknown) => z.object({ token, table: z.enum(DELETABLE), id: z.string().min(1) }).parse(i))
   .handler(async ({ data }) => {
-    if (!(await guard(data.token))) return { ok: false as const, error: "Session expired." };
+    if (!(await adminGuard(data.token))) return { ok: false as const, error: ADMIN_ONLY };
     try {
       const { deleteRow } = await import("@/lib/eyecare.server");
       await deleteRow(data.table, data.id);
