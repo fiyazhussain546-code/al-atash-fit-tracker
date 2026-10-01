@@ -73,6 +73,7 @@ export const Route = createFileRoute("/admin/eyecare")({
 });
 
 const TOKEN_KEY = "alatash_admin_token";
+import { decodeToken, ROLE_LABEL } from "@/lib/staff";
 const today = () => new Date().toISOString().slice(0, 10);
 
 type Tab = "dashboard" | "patients" | "doctors" | "appointments" | "followups" | "payments";
@@ -126,6 +127,8 @@ function EyeCareAdmin() {
   const [patientForm, setPatientForm] = useState<PatientForm | null>(null);
 
   const load = useServerFn(eyecareLoad);
+  const identity = decodeToken(token);
+  const isAdmin = identity?.role === "admin";
 
   useEffect(() => {
     const t = typeof window === "undefined" ? "" : sessionStorage.getItem(TOKEN_KEY) ?? "";
@@ -301,13 +304,18 @@ function EyeCareAdmin() {
           <div className="flex items-center gap-3">
             <Logo compact />
             <span className="hidden text-sm font-semibold text-brand-dark sm:inline">Eye Care Consultancy</span>
+            {identity && (
+              <span className="rounded-full bg-brand-soft px-2.5 py-1 text-[11px] font-semibold text-brand-dark">
+                {identity.username} · {ROLE_LABEL[identity.role].en}
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <Link
               to="/admin"
               className="inline-flex min-h-10 items-center gap-1.5 rounded-full border px-3 text-xs font-medium text-muted-foreground hover:bg-secondary"
             >
-              <ArrowLeft className="size-3.5" aria-hidden /> Weight Assessment
+              <ArrowLeft className="size-3.5" aria-hidden /> {isAdmin ? "Weight Assessment" : "Sign in page"}
             </Link>
             <Button variant="outline" size="sm" onClick={() => void refresh()} disabled={loading}>
               {loading ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}
@@ -316,7 +324,7 @@ function EyeCareAdmin() {
         </div>
         <div className="mx-auto max-w-6xl overflow-x-auto px-4 pb-2">
           <div className="flex gap-2">
-            {TABS.map((t) => (
+            {TABS.filter((t) => isAdmin || t.key !== "doctors").map((t) => (
               <button
                 key={t.key}
                 type="button"
@@ -386,9 +394,11 @@ function EyeCareAdmin() {
               <Button variant="outline" className="min-h-11" onClick={() => setTab("payments")}>
                 Payments
               </Button>
-              <Button variant="outline" className="min-h-11" onClick={() => setTab("doctors")}>
-                <Users className="size-4" /> Doctors
-              </Button>
+              {isAdmin && (
+                <Button variant="outline" className="min-h-11" onClick={() => setTab("doctors")}>
+                  <Users className="size-4" /> Doctors
+                </Button>
+              )}
             </div>
 
             <div className="grid gap-4 lg:grid-cols-2">
@@ -502,9 +512,11 @@ function EyeCareAdmin() {
               <Button className="min-h-11" onClick={() => setPatientForm(emptyPatientForm())}>
                 <Plus className="size-4" /> New Patient
               </Button>
-              <Button variant="outline" className="min-h-11" onClick={exportCsv}>
-                <Download className="size-4" /> CSV
-              </Button>
+              {isAdmin && (
+                <Button variant="outline" className="min-h-11" onClick={exportCsv}>
+                  <Download className="size-4" /> CSV
+                </Button>
+              )}
             </div>
 
             {patients.length === 0 ? (
@@ -539,7 +551,7 @@ function EyeCareAdmin() {
           </section>
         )}
 
-        {tab === "doctors" && (
+        {tab === "doctors" && isAdmin && (
           <DoctorsTab token={token} data={data} onChanged={() => void refresh()} flash={flash} />
         )}
 

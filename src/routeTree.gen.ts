@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminEyecareRouteImport } from './routes/admin.eyecare'
+import { Route as AdminRolesRouteImport } from './routes/admin.roles'
 import { Route as AssessmentTypeRouteImport } from './routes/assessment.$type'
 import { Route as ConsultancyIndexRouteImport } from './routes/consultancy.index'
 import { Route as ConsultancyEyeCareRouteImport } from './routes/consultancy.eye-care'
@@ -29,6 +30,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
 const AdminEyecareRoute = AdminEyecareRouteImport.update({
   id: '/admin/eyecare',
   path: '/admin/eyecare',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRolesRoute = AdminRolesRouteImport.update({
+  id: '/admin/roles',
+  path: '/admin/roles',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AssessmentTypeRoute = AssessmentTypeRouteImport.update({
@@ -50,6 +56,7 @@ const ConsultancyEyeCareRoute = ConsultancyEyeCareRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin/eyecare': typeof AdminEyecareRoute
+  '/admin/roles': typeof AdminRolesRoute
   '/assessment/$type': typeof AssessmentTypeRoute
   '/consultancy/eye-care': typeof ConsultancyEyeCareRoute
   '/admin/': typeof AdminIndexRoute
@@ -58,6 +65,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin/eyecare': typeof AdminEyecareRoute
+  '/admin/roles': typeof AdminRolesRoute
   '/assessment/$type': typeof AssessmentTypeRoute
   '/consultancy/eye-care': typeof ConsultancyEyeCareRoute
   '/admin': typeof AdminIndexRoute
@@ -67,6 +75,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin/eyecare': typeof AdminEyecareRoute
+  '/admin/roles': typeof AdminRolesRoute
   '/assessment/$type': typeof AssessmentTypeRoute
   '/consultancy/eye-care': typeof ConsultancyEyeCareRoute
   '/admin/': typeof AdminIndexRoute
@@ -77,6 +86,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin/eyecare'
+    | '/admin/roles'
     | '/assessment/$type'
     | '/consultancy/eye-care'
     | '/admin/'
@@ -85,6 +95,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/admin/eyecare'
+    | '/admin/roles'
     | '/assessment/$type'
     | '/consultancy/eye-care'
     | '/admin'
@@ -93,6 +104,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/admin/eyecare'
+    | '/admin/roles'
     | '/assessment/$type'
     | '/consultancy/eye-care'
     | '/admin/'
@@ -102,6 +114,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminEyecareRoute: typeof AdminEyecareRoute
+  AdminRolesRoute: typeof AdminRolesRoute
   AssessmentTypeRoute: typeof AssessmentTypeRoute
   ConsultancyEyeCareRoute: typeof ConsultancyEyeCareRoute
   AdminIndexRoute: typeof AdminIndexRoute
@@ -131,6 +144,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminEyecareRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/roles': {
+      id: '/admin/roles'
+      path: '/admin/roles'
+      fullPath: '/admin/roles'
+      preLoaderRoute: typeof AdminRolesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/assessment/$type': {
       id: '/assessment/$type'
       path: '/assessment/$type'
@@ -158,6 +178,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminEyecareRoute: AdminEyecareRoute,
+  AdminRolesRoute: AdminRolesRoute,
   AssessmentTypeRoute: AssessmentTypeRoute,
   ConsultancyEyeCareRoute: ConsultancyEyeCareRoute,
   AdminIndexRoute: AdminIndexRoute,

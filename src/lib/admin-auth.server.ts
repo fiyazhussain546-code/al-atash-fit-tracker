@@ -1,5 +1,13 @@
+import type { StaffMember, StaffRole } from "@/lib/staff";
+
 const encoder = new TextEncoder();
 const SETTINGS_KEY = "admin_auth";
+
+function fromB64url(value: string) {
+  const padded = value.replace(/-/g, "+").replace(/_/g, "/");
+  const bin = atob(padded + "=".repeat((4 - (padded.length % 4)) % 4));
+  return Uint8Array.from(bin, (c) => c.charCodeAt(0));
+}
 
 interface AdminAuthRecord {
   [key: string]: string;
