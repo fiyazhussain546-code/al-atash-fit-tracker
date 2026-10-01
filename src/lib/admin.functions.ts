@@ -29,11 +29,20 @@ export const adminSetupPassword = createServerFn({ method: "POST" })
   });
 
 export const adminLogin = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => z.object({ password: z.string().min(1).max(200) }).parse(input))
+  .inputValidator((input: unknown) =>
+    z.object({ password: z.string().min(1).max(200), username: z.string().max(40).default("") }).parse(input),
+  )
   .handler(async ({ data }) => {
-    const { isConfigured, checkPassword, issueToken } = await import("@/lib/admin-auth.server");
+    const { isConfigured, checkPassword, issueToken, checkStaffPassword } = await import("@/lib/admin-auth.server");
     if (!(await isConfigured())) {
       return { ok: false as const, error: "No admin password is set yet. Use first-time setup.", token: "" };
+    }
+    const username = data.username.trim();
+    if (username && username.toLowerCase() !== "owner") {
+      const member = await checkStaffPassword(username, data.password);
+      if (member === "inactive") return { ok: false as const, error: "This account is disabled.", token: "" };
+      if (!member) return { ok: false as const, error: "Incorrect username or password.", token: "" };
+      return { ok: true as const, error: "", token: await issueToken(12, member.username, member.role) };
     }
     if (!(await checkPassword(data.password))) {
       return { ok: false as const, error: "Incorrect password.", token: "" };
