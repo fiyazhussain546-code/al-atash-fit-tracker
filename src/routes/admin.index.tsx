@@ -1,17 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import {
   Check,
   Download,
   Eye,
-
   ExternalLink,
   Loader2,
   LogOut,
   RefreshCw,
   Search,
   Settings2,
+  Users,
   X,
 } from "lucide-react";
 import { Logo } from "@/components/brand";
@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { isAdminToken } from "@/lib/staff";
 import {
   adminLogin,
   adminListSubmissions,
@@ -194,9 +195,12 @@ function AdminPage() {
   const saveChannels = useServerFn(adminSavePaymentChannels);
   const [aiBusy, setAiBusy] = useState(false);
 
+  const [username, setUsername] = useState("");
+  const navigate = useNavigate();
+
   useEffect(() => {
     const saved = sessionStorage.getItem(TOKEN_KEY);
-    if (saved) setToken(saved);
+    if (saved && isAdminToken(saved)) setToken(saved);
   }, []);
 
   useEffect(() => {
@@ -372,11 +376,15 @@ function AdminPage() {
     setBusy(true);
     setLoginError("");
     try {
-      const res = await login({ data: { password } });
+      const res = await login({ data: { password, username } });
       if (res.ok) {
         sessionStorage.setItem(TOKEN_KEY, res.token);
-        setToken(res.token);
         setPassword("");
+        if (!isAdminToken(res.token)) {
+          void navigate({ to: "/admin/eyecare" });
+          return;
+        }
+        setToken(res.token);
       } else setLoginError(res.error);
     } catch (err) {
       setLoginError(err instanceof Error ? err.message : "Login failed.");
@@ -599,8 +607,18 @@ function AdminPage() {
                 Private dashboard for the AL-ATASH FIT clinical team.
               </p>
               <form onSubmit={handleLogin} className="mt-5 space-y-3">
+                <label htmlFor="un" className="text-sm font-semibold">
+                  Username <span className="font-normal text-muted-foreground">(team members only)</span>
+                </label>
+                <Input
+                  id="un"
+                  autoComplete="username"
+                  placeholder="Leave blank for main admin"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                />
                 <label htmlFor="pw" className="text-sm font-semibold">
-                  Admin password
+                  Password
                 </label>
                 <Input
                   id="pw"
@@ -636,6 +654,12 @@ function AdminPage() {
               className="inline-flex h-9 items-center gap-1.5 rounded-md border px-3 text-xs font-medium text-brand-dark hover:bg-brand-soft"
             >
               <Eye className="size-4" /> Eye Care Consultancy
+            </Link>
+            <Link
+              to="/admin/roles"
+              className="inline-flex h-9 items-center gap-1.5 rounded-md border px-3 text-xs font-medium text-brand-dark hover:bg-brand-soft"
+            >
+              <Users className="size-4" /> Team & roles
             </Link>
             <Button variant="outline" size="sm" onClick={() => void load(token)} disabled={busy}>
               <RefreshCw className={cn("size-4", busy && "animate-spin")} /> Refresh
