@@ -58,6 +58,9 @@ function mapAssessment(r: Record<string, unknown>): EyeAssessment {
     budget: s(r["budget"]),
     consultantNotes: s(r["consultant_notes"]),
     assessmentDate: s(r["assessment_date"]),
+    extra: Object.fromEntries(
+      Object.entries((r["extra"] as Record<string, unknown> | null) ?? {}).map(([k, v]) => [k, s(v)]),
+    ),
   };
 }
 
@@ -174,7 +177,7 @@ async function all(table: string, order: string, asc = false): Promise<Row[]> {
   return (data ?? []) as Row[];
 }
 
-export async function loadEyeCareData(): Promise<EyeCareData> {
+export async function loadEyeCareData(specialty = "eye-care"): Promise<EyeCareData> {
   const [patients, assessments, doctors, recommendations, appointments, followups, services, documents, timeline] =
     await Promise.all([
       all("eyecare_patients", "created_at"),
@@ -187,16 +190,19 @@ export async function loadEyeCareData(): Promise<EyeCareData> {
       all("eyecare_documents", "created_at"),
       all("eyecare_timeline", "occurred_at"),
     ]);
+  const mine = patients.filter((r) => s(r["specialty"] || "eye-care") === specialty);
+  const ids = new Set(mine.map((r) => s(r["id"])));
+  const own = (rows: Row[]) => rows.filter((r) => ids.has(s(r["patient_uid"])));
   return {
-    patients: patients.map(mapPatient),
-    assessments: assessments.map(mapAssessment),
-    doctors: doctors.map(mapDoctor),
-    recommendations: recommendations.map(mapRecommendation),
-    appointments: appointments.map(mapAppointment),
-    followups: followups.map(mapFollowup),
-    services: services.map(mapService),
-    documents: documents.map(mapDocument),
-    timeline: timeline.map(mapTimeline),
+    patients: mine.map(mapPatient),
+    assessments: own(assessments).map(mapAssessment),
+    doctors: doctors.filter((r) => s(r["module"] || "eye-care") === specialty).map(mapDoctor),
+    recommendations: own(recommendations).map(mapRecommendation),
+    appointments: own(appointments).map(mapAppointment),
+    followups: own(followups).map(mapFollowup),
+    services: own(services).map(mapService),
+    documents: own(documents).map(mapDocument),
+    timeline: own(timeline).map(mapTimeline),
   };
 }
 
@@ -206,26 +212,31 @@ export async function addTimeline(patientUid: string, event: string, detail = ""
   await (db as any).from("eyecare_timeline").insert({ patient_uid: patientUid, event, detail });
 }
 
-export async function nextPatientId(): Promise<string> {
-  const { data, error } = await (db as any).rpc("next_eyecare_patient_id");
+export async function nextPatientId(prefix = "EC"): Promise<string> {
+  const { data, error } = await (db as any).rpc("next_consultancy_patient_id", { _prefix: prefix });
   if (error || !data) {
     // Defensive fallback — still unique thanks to the DB unique constraint.
-    return `EC-${new Date().getUTCFullYear()}-${String(Date.now()).slice(-4)}`;
+    return `${prefix}-${new Date().getUTCFullYear()}-${String(Date.now()).slice(-4)}`;
   }
   return String(data);
 }
 
-export async function savePatient(id: string | null, fields: Record<string, unknown>) {
+export async function savePatient(
+  id: string | null,
+  fields: Record<string, unknown>,
+  specialty = "eye-care",
+  prefix = "EC",
+) {
   if (id) {
     const { error } = await (db as any).from("eyecare_patients").update(fields).eq("id", id);
     if (error) throw new Error(error.message);
     await addTimeline(id, "Patient record updated");
     return id;
   }
-  const patientId = await nextPatientId();
+  const patientId = await nextPatientId(prefix);
   const { data, error } = await (db as any)
     .from("eyecare_patients")
-    .insert({ ...fields, patient_id: patientId })
+    .insert({ ...fields, patient_id: patientId, specialty })
     .select("id, patient_id")
     .single();
   if (error) throw new Error(error.message);
@@ -258,13 +269,13 @@ export async function saveAssessment(patientUid: string, fields: Record<string, 
   await addTimeline(patientUid, "Assessment completed");
 }
 
-export async function saveDoctor(id: string | null, fields: Record<string, unknown>) {
+export async function saveDoctor(id: string | null, fields: Record<string, unknown>, module = "eye-care") {
   if (id) {
     const { error } = await (db as any).from("eyecare_doctors").update(fields).eq("id", id);
     if (error) throw new Error(error.message);
     return;
   }
-  const { error } = await (db as any).from("eyecare_doctors").insert(fields);
+  const { error } = await (db as any).from("eyecare_doctors").insert({ ...fields, module });
   if (error) throw new Error(error.message);
 }
 

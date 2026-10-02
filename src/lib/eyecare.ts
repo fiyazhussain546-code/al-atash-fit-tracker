@@ -8,9 +8,10 @@ export const MEDICAL_SPECIALITIES = [
   { key: "general", en: "General Medical Consultancy", ur: "جنرل میڈیکل کنسلٹینسی", active: false },
   { key: "skin", en: "Skin / Dermatology", ur: "جِلد کے امراض", active: false },
   { key: "diabetes", en: "Diabetes Care", ur: "ذیابیطس", active: false },
-  { key: "cardiology", en: "Cardiology", ur: "امراضِ قلب", active: false },
-  { key: "orthopedic", en: "Orthopedic", ur: "ہڈیوں کے امراض", active: false },
-  { key: "gynecology", en: "Gynecology", ur: "امراضِ نسواں", active: false },
+  { key: "cardiology", en: "Cardiology", ur: "امراضِ قلب", active: true },
+  { key: "orthopedic", en: "Orthopaedics", ur: "ہڈیوں کے امراض", active: true },
+  { key: "gynecology", en: "Gynaecology", ur: "امراضِ نسواں", active: true },
+  { key: "pediatrics", en: "Paediatrics", ur: "امراضِ اطفال", active: true },
   { key: "ent", en: "ENT", ur: "کان ناک گلا", active: false },
   { key: "dental", en: "Dental", ur: "دانتوں کا علاج", active: false },
 ] as const;
@@ -180,6 +181,7 @@ export interface EyeAssessment {
   budget: string;
   consultantNotes: string;
   assessmentDate: string;
+  extra: Record<string, string>;
 }
 
 export interface EyeDoctor {
