@@ -180,6 +180,7 @@ export type Database = {
           budget: string
           consultant_notes: string
           created_at: string
+          extra: Json
           id: string
           patient_priority: string
           patient_uid: string
@@ -200,6 +201,7 @@ export type Database = {
           budget?: string
           consultant_notes?: string
           created_at?: string
+          extra?: Json
           id?: string
           patient_priority?: string
           patient_uid: string
@@ -220,6 +222,7 @@ export type Database = {
           budget?: string
           consultant_notes?: string
           created_at?: string
+          extra?: Json
           id?: string
           patient_priority?: string
           patient_uid?: string
@@ -255,6 +258,7 @@ export type Database = {
           estimated_cost: string
           id: string
           location: string
+          module: string
           name: string
           notes: string
           services: string
@@ -270,6 +274,7 @@ export type Database = {
           estimated_cost?: string
           id?: string
           location?: string
+          module?: string
           name?: string
           notes?: string
           services?: string
@@ -285,6 +290,7 @@ export type Database = {
           estimated_cost?: string
           id?: string
           location?: string
+          module?: string
           name?: string
           notes?: string
           services?: string
@@ -420,6 +426,7 @@ export type Database = {
           registration_date: string
           relationship: string
           service_package: string
+          specialty: string
           updated_at: string
           whatsapp: string
         }
@@ -443,6 +450,7 @@ export type Database = {
           registration_date?: string
           relationship?: string
           service_package?: string
+          specialty?: string
           updated_at?: string
           whatsapp?: string
         }
@@ -466,6 +474,7 @@ export type Database = {
           registration_date?: string
           relationship?: string
           service_package?: string
+          specialty?: string
           updated_at?: string
           whatsapp?: string
         }
@@ -708,6 +717,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      next_consultancy_patient_id: {
+        Args: { _prefix: string }
+        Returns: string
+      }
       next_eyecare_patient_id: { Args: never; Returns: string }
     }
     Enums: {
