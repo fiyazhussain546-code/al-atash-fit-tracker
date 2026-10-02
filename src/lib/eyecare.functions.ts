@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { emptyEyeCareData } from "@/lib/eyecare";
+import { SPECIALTIES } from "@/lib/specialties";
 
 const token = z.string().min(1).max(500);
 const txt = (max = 2000) => z.string().max(max).default("");
@@ -18,17 +19,19 @@ async function adminGuard(t: string) {
 }
 const ADMIN_ONLY = "Only admins can do this. / یہ کام صرف ایڈمن کر سکتا ہے۔";
 
+const specialty = z.enum(["eye-care", "cardiology", "orthopedic", "gynecology", "pediatrics"]).default("eye-care");
+
 const nullDate = (v: string) => (v && v.trim() ? v : null);
 
 export const eyecareLoad = createServerFn({ method: "POST" })
-  .inputValidator((i: unknown) => z.object({ token }).parse(i))
+  .inputValidator((i: unknown) => z.object({ token, specialty }).parse(i))
   .handler(async ({ data }) => {
     if (!(await guard(data.token))) {
       return { ok: false as const, error: "Session expired. Please sign in again.", data: emptyEyeCareData() };
     }
     try {
       const { loadEyeCareData } = await import("@/lib/eyecare.server");
-      return { ok: true as const, error: "", data: await loadEyeCareData() };
+      return { ok: true as const, error: "", data: await loadEyeCareData(data.specialty) };
     } catch (err) {
       return {
         ok: false as const,
@@ -59,7 +62,7 @@ const patientSchema = z.object({
 });
 
 export const eyecareSavePatient = createServerFn({ method: "POST" })
-  .inputValidator((i: unknown) => z.object({ token, patient: patientSchema }).parse(i))
+  .inputValidator((i: unknown) => z.object({ token, specialty, patient: patientSchema }).parse(i))
   .handler(async ({ data }) => {
     if (!(await guard(data.token))) return { ok: false as const, error: "Session expired.", id: "" };
     const p = data.patient;
@@ -82,7 +85,7 @@ export const eyecareSavePatient = createServerFn({ method: "POST" })
         case_status: p.caseStatus || "New",
         ...(p.registrationDate ? { registration_date: p.registrationDate } : {}),
         notes: p.notes,
-      });
+      }, data.specialty, SPECIALTIES[data.specialty].prefix);
       return { ok: true as const, error: "", id };
     } catch (err) {
       return { ok: false as const, error: err instanceof Error ? err.message : "Could not save patient.", id: "" };
@@ -123,6 +126,7 @@ export const eyecareSaveAssessment = createServerFn({ method: "POST" })
           budget: txt(80),
           consultantNotes: txt(3000),
           assessmentDate: dateish,
+          extra: z.record(z.string().max(60), z.string().max(2000)).default({}),
         }),
       })
       .parse(i),
@@ -147,6 +151,7 @@ export const eyecareSaveAssessment = createServerFn({ method: "POST" })
         budget: a.budget,
         consultant_notes: a.consultantNotes,
         ...(a.assessmentDate ? { assessment_date: a.assessmentDate } : {}),
+        extra: a.extra,
       });
       return { ok: true as const, error: "" };
     } catch (err) {
@@ -159,6 +164,7 @@ export const eyecareSaveDoctor = createServerFn({ method: "POST" })
     z
       .object({
         token,
+        specialty,
         doctor: z.object({
           id: z.string().max(60).nullable().default(null),
           name: z.string().trim().min(1, "Doctor/Centre name is required").max(160),
@@ -191,7 +197,7 @@ export const eyecareSaveDoctor = createServerFn({ method: "POST" })
         contact: d.contact,
         notes: d.notes,
         active: d.active,
-      });
+      }, data.specialty);
       return { ok: true as const, error: "" };
     } catch (err) {
       return { ok: false as const, error: err instanceof Error ? err.message : "Could not save doctor/centre." };
