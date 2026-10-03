@@ -320,6 +320,19 @@ function EyeCareAdmin() {
             </Button>
           </div>
         </div>
+        <div className="mx-auto flex max-w-6xl gap-1.5 overflow-x-auto px-4 pb-2">
+          {(Object.values(SPECIALTIES)).map((sp) =>
+            sp.key === "eye-care" ? (
+              <Link key={sp.key} to="/admin/eyecare" className={cn("whitespace-nowrap rounded-md px-2.5 py-1 text-[11px] font-semibold", cfg.key === sp.key ? "bg-brand-dark text-primary-foreground" : "text-muted-foreground hover:bg-secondary")}>
+                {sp.short}
+              </Link>
+            ) : (
+              <Link key={sp.key} to="/admin/consultancy/$specialty" params={{ specialty: sp.key }} className={cn("whitespace-nowrap rounded-md px-2.5 py-1 text-[11px] font-semibold", cfg.key === sp.key ? "bg-brand-dark text-primary-foreground" : "text-muted-foreground hover:bg-secondary")}>
+                {sp.short}
+              </Link>
+            ),
+          )}
+        </div>
         <div className="mx-auto max-w-6xl overflow-x-auto px-4 pb-2">
           <div className="flex gap-2">
             {TABS.filter((t) => isAdmin || t.key !== "doctors").map((t) => (
