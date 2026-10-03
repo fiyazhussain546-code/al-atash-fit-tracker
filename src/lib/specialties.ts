@@ -4,7 +4,7 @@
  * follow-ups, services, documents) with its own options and assessment questions.
  */
 
-export type SpecialtyKey = "eye-care" | "cardiology" | "orthopedic" | "gynecology" | "pediatrics";
+export type SpecialtyKey = "eye-care" | "cardiology" | "orthopedic" | "gynecology" | "pediatrics" | "dermatology";
 
 export interface SpecialtyQuestion {
   key: string;
@@ -158,6 +158,29 @@ export const SPECIALTIES: Record<SpecialtyKey, SpecialtyConfig> = {
       { key: "allergies", en: "Allergies", ur: "الرجی", type: "text" },
     ],
     ...disclaimer("Paediatrics Consultancy", "امراضِ اطفال کنسلٹینسی", "paediatrician", "ماہرِ امراضِ اطفال"),
+  },
+  dermatology: {
+    key: "dermatology",
+    en: "Dermatology Consultancy",
+    ur: "امراضِ جلد کنسلٹینسی",
+    short: "Skin Care",
+    prefix: "DE",
+    doctorWord: "dermatologist",
+    tagline: "Guidance for skin, hair and nail problems, cosmetic procedures and skin specialists.",
+    taglineUr: "جلد، بالوں اور ناخنوں کے مسائل کے لیے رہنمائی۔",
+    caseCategories: ["Acne / Pimples", "Skin Allergy / Eczema", "Hair Loss", "Pigmentation / Melasma", "Psoriasis", "Skin Infection", "Mole / Growth Check", "Cosmetic Procedure", "Child Skin Problem", "Other"],
+    specialists: ["Cosmetic Dermatology", "Dermatosurgery", "Pediatric Dermatology", "Hair / Trichology", "General Dermatology", "Other"],
+    packages: packages("Skin Care", "جلد کی دیکھ بھال"),
+    questions: [
+      { key: "affectedArea", en: "Affected area", ur: "متاثرہ حصہ", type: "select", options: ["Face", "Scalp / Hair", "Hands", "Feet", "Body (widespread)", "Nails", "Multiple", "Other"] },
+      { key: "duration", en: "How long has the problem lasted?", ur: "مسئلہ کب سے ہے؟", type: "text" },
+      { key: "itching", en: "Itching / burning", ur: "خارش / جلن", type: "select", options: ["None", "Mild", "Moderate", "Severe"] },
+      { key: "spread", en: "Is it spreading?", ur: "کیا یہ پھیل رہا ہے؟", type: "select", options: YN },
+      { key: "previousTreatment", en: "Creams / medicines already tried", ur: "پہلے استعمال کی گئی ادویات / کریمیں", type: "textarea" },
+      { key: "allergies", en: "Known allergies (medicine / food / cosmetics)", ur: "معلوم الرجی", type: "text" },
+      { key: "photosAvailable", en: "Photos of the affected area available", ur: "متاثرہ جگہ کی تصاویر دستیاب", type: "select", options: YN },
+    ],
+    ...disclaimer("Dermatology Consultancy", "امراضِ جلد کنسلٹینسی", "dermatologist", "ماہرِ امراضِ جلد"),
   },
 };
 
