@@ -653,7 +653,7 @@ function AdminPage() {
               to="/admin/eyecare"
               className="inline-flex h-9 items-center gap-1.5 rounded-md border px-3 text-xs font-medium text-brand-dark hover:bg-brand-soft"
             >
-              <Eye className="size-4" /> Eye Care Consultancy
+              <Eye className="size-4" /> Medical Consultancy
             </Link>
             <Link
               to="/admin/roles"

@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Eye, ArrowLeft, Stethoscope, ShieldCheck } from "lucide-react";
+import { SPECIALTIES } from "@/lib/specialties";
 import { Logo, Urdu } from "@/components/brand";
 import { MEDICAL_SPECIALITIES } from "@/lib/eyecare";
 
@@ -71,6 +72,28 @@ function ConsultancyIndex() {
               Open
             </span>
           </Link>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            {(["cardiology", "orthopedic", "gynecology", "pediatrics"] as const).map((k) => {
+              const sp = SPECIALTIES[k];
+              return (
+                <Link
+                  key={k}
+                  to="/consultancy/$specialty"
+                  params={{ specialty: k }}
+                  className="group flex items-start gap-3 rounded-3xl border-2 border-border bg-card p-5 shadow-sm transition-all hover:-translate-y-1 hover:border-brand hover:shadow-lg"
+                >
+                  <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-brand/10 text-brand">
+                    <Stethoscope className="size-6" aria-hidden />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block font-display text-lg font-extrabold text-foreground">{sp.en}</span>
+                    <Urdu className="block text-base text-muted-foreground">{sp.ur}</Urdu>
+                    <span className="mt-1 block text-xs text-muted-foreground">{sp.tagline}</span>
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
         </section>
 
         <section className="mt-10 rounded-2xl border bg-card p-5">

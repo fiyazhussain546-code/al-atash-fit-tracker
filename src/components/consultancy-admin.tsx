@@ -90,7 +90,7 @@ const emptyPatientForm = (cfg: SpecialtyConfig) => ({
   priority: "Normal",
   preferredCity: "",
   budgetPreference: "",
-  servicePackage: cfg.packages[0].key as string,
+  servicePackage: cfg.packages[0]!.key as string,
   caseStatus: "New",
   registrationDate: today(),
   notes: "",
@@ -319,6 +319,19 @@ function EyeCareAdmin() {
               {loading ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}
             </Button>
           </div>
+        </div>
+        <div className="mx-auto flex max-w-6xl gap-1.5 overflow-x-auto px-4 pb-2">
+          {(Object.values(SPECIALTIES)).map((sp) =>
+            sp.key === "eye-care" ? (
+              <Link key={sp.key} to="/admin/eyecare" className={cn("whitespace-nowrap rounded-md px-2.5 py-1 text-[11px] font-semibold", cfg.key === sp.key ? "bg-brand-dark text-primary-foreground" : "text-muted-foreground hover:bg-secondary")}>
+                {sp.short}
+              </Link>
+            ) : (
+              <Link key={sp.key} to="/admin/consultancy/$specialty" params={{ specialty: sp.key }} className={cn("whitespace-nowrap rounded-md px-2.5 py-1 text-[11px] font-semibold", cfg.key === sp.key ? "bg-brand-dark text-primary-foreground" : "text-muted-foreground hover:bg-secondary")}>
+                {sp.short}
+              </Link>
+            ),
+          )}
         </div>
         <div className="mx-auto max-w-6xl overflow-x-auto px-4 pb-2">
           <div className="flex gap-2">
@@ -638,7 +651,7 @@ function EyeCareAdmin() {
               priority: p.priority || "Normal",
               preferredCity: p.preferredCity,
               budgetPreference: p.budgetPreference,
-              servicePackage: p.servicePackage || cfg.packages[0].key,
+              servicePackage: p.servicePackage || cfg.packages[0]!.key,
               caseStatus: p.caseStatus || "New",
               registrationDate: p.registrationDate || today(),
               notes: p.notes,
@@ -920,7 +933,7 @@ function DoctorsTab({
                   size="sm"
                   variant="outline"
                   onClick={async () => {
-                    const res = await save({ data: { token, doctor: { ...d, id: d.id, active: !d.active } } });
+                    const res = await save({ data: { token, specialty: cfg.key, doctor: { ...d, id: d.id, active: !d.active } } });
                     if (!res.ok) return flash(res.error);
                     onChanged();
                     flash(d.active ? "Marked inactive" : "Marked active");
@@ -991,7 +1004,7 @@ function DoctorsTab({
               className="min-h-11"
               onClick={async () => {
                 if (!form.name.trim()) return flash("Doctor/Centre name is required — نام لازمی ہے");
-                const res = await save({ data: { token, doctor: form } });
+                const res = await save({ data: { token, specialty: cfg.key, doctor: form } });
                 if (!res.ok) return flash(res.error);
                 setForm(null);
                 onChanged();
@@ -1071,6 +1084,7 @@ function PatientDetail({
     budget: assessment?.budget ?? patient.budgetPreference ?? "",
     consultantNotes: assessment?.consultantNotes ?? "",
     assessmentDate: assessment?.assessmentDate ?? today(),
+    extra: (assessment?.extra ?? {}) as Record<string, string>,
   });
 
   const [recForm, setRecForm] = useState<null | {
@@ -1387,6 +1401,26 @@ ${
               onChange={(e) => setAForm({ ...aForm, assessmentDate: e.target.value })}
             />
           </Field>
+          {cfg.questions.length > 0 && (
+            <h3 className="sm:col-span-2 mt-2 font-display text-sm font-extrabold text-brand-dark">
+              {cfg.short} questions
+            </h3>
+          )}
+          {cfg.questions.map((q) => {
+            const val = aForm.extra[q.key] ?? "";
+            const set = (v: string) => setAForm({ ...aForm, extra: { ...aForm.extra, [q.key]: v } });
+            return (
+              <Field key={q.key} label={q.en} ur={q.ur} className={q.type === "textarea" ? "sm:col-span-2" : ""}>
+                {q.type === "select" ? (
+                  <Select value={val} onChange={(e) => set(e.target.value)} options={["", ...(q.options ?? [])]} />
+                ) : q.type === "textarea" ? (
+                  <TextArea value={val} onChange={(e) => set(e.target.value)} />
+                ) : (
+                  <TextInput value={val} onChange={(e) => set(e.target.value)} />
+                )}
+              </Field>
+            );
+          })}
           <Field label="Consultant coordination notes" ur="کنسلٹنٹ نوٹس" className="sm:col-span-2">
             <TextArea
               value={aForm.consultantNotes}
@@ -1909,7 +1943,7 @@ ${
             onClick={() =>
               setSvcForm({
                 id: null,
-                servicePackage: patient.servicePackage || cfg.packages[0].key,
+                servicePackage: patient.servicePackage || cfg.packages[0]!.key,
                 serviceType: "",
                 fee: 0,
                 paymentStatus: "Pending",
