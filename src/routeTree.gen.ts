@@ -16,6 +16,7 @@ import { Route as AdminRolesRouteImport } from './routes/admin.roles'
 import { Route as AssessmentTypeRouteImport } from './routes/assessment.$type'
 import { Route as ConsultancyIndexRouteImport } from './routes/consultancy.index'
 import { Route as ConsultancyEyeCareRouteImport } from './routes/consultancy.eye-care'
+import { Route as AdminConsultancySpecialtyRouteImport } from './routes/admin.consultancy.$specialty'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -52,6 +53,12 @@ const ConsultancyEyeCareRoute = ConsultancyEyeCareRouteImport.update({
   path: '/consultancy/eye-care',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminConsultancySpecialtyRoute =
+  AdminConsultancySpecialtyRouteImport.update({
+    id: '/admin/consultancy/$specialty',
+    path: '/admin/consultancy/$specialty',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -61,6 +68,7 @@ export interface FileRoutesByFullPath {
   '/consultancy/eye-care': typeof ConsultancyEyeCareRoute
   '/admin/': typeof AdminIndexRoute
   '/consultancy/': typeof ConsultancyIndexRoute
+  '/admin/consultancy/$specialty': typeof AdminConsultancySpecialtyRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -70,6 +78,7 @@ export interface FileRoutesByTo {
   '/consultancy/eye-care': typeof ConsultancyEyeCareRoute
   '/admin': typeof AdminIndexRoute
   '/consultancy': typeof ConsultancyIndexRoute
+  '/admin/consultancy/$specialty': typeof AdminConsultancySpecialtyRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -80,6 +89,7 @@ export interface FileRoutesById {
   '/consultancy/eye-care': typeof ConsultancyEyeCareRoute
   '/admin/': typeof AdminIndexRoute
   '/consultancy/': typeof ConsultancyIndexRoute
+  '/admin/consultancy/$specialty': typeof AdminConsultancySpecialtyRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -91,6 +101,7 @@ export interface FileRouteTypes {
     | '/consultancy/eye-care'
     | '/admin/'
     | '/consultancy/'
+    | '/admin/consultancy/$specialty'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -100,6 +111,7 @@ export interface FileRouteTypes {
     | '/consultancy/eye-care'
     | '/admin'
     | '/consultancy'
+    | '/admin/consultancy/$specialty'
   id:
     | '__root__'
     | '/'
@@ -109,6 +121,7 @@ export interface FileRouteTypes {
     | '/consultancy/eye-care'
     | '/admin/'
     | '/consultancy/'
+    | '/admin/consultancy/$specialty'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -119,6 +132,7 @@ export interface RootRouteChildren {
   ConsultancyEyeCareRoute: typeof ConsultancyEyeCareRoute
   AdminIndexRoute: typeof AdminIndexRoute
   ConsultancyIndexRoute: typeof ConsultancyIndexRoute
+  AdminConsultancySpecialtyRoute: typeof AdminConsultancySpecialtyRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -172,6 +186,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ConsultancyEyeCareRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/consultancy/$specialty': {
+      id: '/admin/consultancy/$specialty'
+      path: '/admin/consultancy/$specialty'
+      fullPath: '/admin/consultancy/$specialty'
+      preLoaderRoute: typeof AdminConsultancySpecialtyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -183,6 +204,7 @@ const rootRouteChildren: RootRouteChildren = {
   ConsultancyEyeCareRoute: ConsultancyEyeCareRoute,
   AdminIndexRoute: AdminIndexRoute,
   ConsultancyIndexRoute: ConsultancyIndexRoute,
+  AdminConsultancySpecialtyRoute: AdminConsultancySpecialtyRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
