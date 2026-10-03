@@ -920,7 +920,7 @@ function DoctorsTab({
                   size="sm"
                   variant="outline"
                   onClick={async () => {
-                    const res = await save({ data: { token, doctor: { ...d, id: d.id, active: !d.active } } });
+                    const res = await save({ data: { token, specialty: cfg.key, doctor: { ...d, id: d.id, active: !d.active } } });
                     if (!res.ok) return flash(res.error);
                     onChanged();
                     flash(d.active ? "Marked inactive" : "Marked active");
@@ -991,7 +991,7 @@ function DoctorsTab({
               className="min-h-11"
               onClick={async () => {
                 if (!form.name.trim()) return flash("Doctor/Centre name is required — نام لازمی ہے");
-                const res = await save({ data: { token, doctor: form } });
+                const res = await save({ data: { token, specialty: cfg.key, doctor: form } });
                 if (!res.ok) return flash(res.error);
                 setForm(null);
                 onChanged();
@@ -1071,6 +1071,7 @@ function PatientDetail({
     budget: assessment?.budget ?? patient.budgetPreference ?? "",
     consultantNotes: assessment?.consultantNotes ?? "",
     assessmentDate: assessment?.assessmentDate ?? today(),
+    extra: (assessment?.extra ?? {}) as Record<string, string>,
   });
 
   const [recForm, setRecForm] = useState<null | {
@@ -1387,6 +1388,26 @@ ${
               onChange={(e) => setAForm({ ...aForm, assessmentDate: e.target.value })}
             />
           </Field>
+          {cfg.questions.length > 0 && (
+            <h3 className="sm:col-span-2 mt-2 font-display text-sm font-extrabold text-brand-dark">
+              {cfg.short} questions
+            </h3>
+          )}
+          {cfg.questions.map((q) => {
+            const val = aForm.extra[q.key] ?? "";
+            const set = (v: string) => setAForm({ ...aForm, extra: { ...aForm.extra, [q.key]: v } });
+            return (
+              <Field key={q.key} label={q.en} ur={q.ur} className={q.type === "textarea" ? "sm:col-span-2" : undefined}>
+                {q.type === "select" ? (
+                  <Select value={val} onChange={(e) => set(e.target.value)} options={["", ...(q.options ?? [])]} />
+                ) : q.type === "textarea" ? (
+                  <TextArea value={val} onChange={(e) => set(e.target.value)} />
+                ) : (
+                  <TextInput value={val} onChange={(e) => set(e.target.value)} />
+                )}
+              </Field>
+            );
+          })}
           <Field label="Consultant coordination notes" ur="کنسلٹنٹ نوٹس" className="sm:col-span-2">
             <TextArea
               value={aForm.consultantNotes}
