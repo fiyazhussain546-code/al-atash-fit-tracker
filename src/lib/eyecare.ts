@@ -6,7 +6,7 @@
 export const MEDICAL_SPECIALITIES = [
   { key: "eye-care", en: "Eye Care Consultancy", ur: "آئی کیئر کنسلٹینسی", active: true },
   { key: "general", en: "General Medical Consultancy", ur: "جنرل میڈیکل کنسلٹینسی", active: false },
-  { key: "skin", en: "Skin / Dermatology", ur: "جِلد کے امراض", active: false },
+  { key: "dermatology", en: "Dermatology", ur: "امراضِ جلد", active: true },
   { key: "diabetes", en: "Diabetes Care", ur: "ذیابیطس", active: false },
   { key: "cardiology", en: "Cardiology", ur: "امراضِ قلب", active: true },
   { key: "orthopedic", en: "Orthopaedics", ur: "ہڈیوں کے امراض", active: true },
