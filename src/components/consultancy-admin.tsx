@@ -90,7 +90,7 @@ const emptyPatientForm = (cfg: SpecialtyConfig) => ({
   priority: "Normal",
   preferredCity: "",
   budgetPreference: "",
-  servicePackage: cfg.packages[0].key as string,
+  servicePackage: cfg.packages[0]!.key as string,
   caseStatus: "New",
   registrationDate: today(),
   notes: "",
@@ -651,7 +651,7 @@ function EyeCareAdmin() {
               priority: p.priority || "Normal",
               preferredCity: p.preferredCity,
               budgetPreference: p.budgetPreference,
-              servicePackage: p.servicePackage || cfg.packages[0].key,
+              servicePackage: p.servicePackage || cfg.packages[0]!.key,
               caseStatus: p.caseStatus || "New",
               registrationDate: p.registrationDate || today(),
               notes: p.notes,
@@ -1410,7 +1410,7 @@ ${
             const val = aForm.extra[q.key] ?? "";
             const set = (v: string) => setAForm({ ...aForm, extra: { ...aForm.extra, [q.key]: v } });
             return (
-              <Field key={q.key} label={q.en} ur={q.ur} className={q.type === "textarea" ? "sm:col-span-2" : undefined}>
+              <Field key={q.key} label={q.en} ur={q.ur} className={q.type === "textarea" ? "sm:col-span-2" : ""}>
                 {q.type === "select" ? (
                   <Select value={val} onChange={(e) => set(e.target.value)} options={["", ...(q.options ?? [])]} />
                 ) : q.type === "textarea" ? (
@@ -1943,7 +1943,7 @@ ${
             onClick={() =>
               setSvcForm({
                 id: null,
-                servicePackage: patient.servicePackage || cfg.packages[0].key,
+                servicePackage: patient.servicePackage || cfg.packages[0]!.key,
                 serviceType: "",
                 fee: 0,
                 paymentStatus: "Pending",

@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Eye, ArrowLeft, Stethoscope, ShieldCheck } from "lucide-react";
+import { SPECIALTIES } from "@/lib/specialties";
 import { Logo, Urdu } from "@/components/brand";
 import { MEDICAL_SPECIALITIES } from "@/lib/eyecare";
 
