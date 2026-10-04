@@ -7,13 +7,13 @@ export const MEDICAL_SPECIALITIES = [
   { key: "eye-care", en: "Eye Care Consultancy", ur: "آئی کیئر کنسلٹینسی", active: true },
   { key: "general", en: "General Medical Consultancy", ur: "جنرل میڈیکل کنسلٹینسی", active: false },
   { key: "dermatology", en: "Dermatology", ur: "امراضِ جلد", active: true },
-  { key: "diabetes", en: "Diabetes Care", ur: "ذیابیطس", active: false },
+  { key: "diabetes", en: "Diabetes Care", ur: "ذیابیطس", active: true },
   { key: "cardiology", en: "Cardiology", ur: "امراضِ قلب", active: true },
   { key: "orthopedic", en: "Orthopaedics", ur: "ہڈیوں کے امراض", active: true },
   { key: "gynecology", en: "Gynaecology", ur: "امراضِ نسواں", active: true },
   { key: "pediatrics", en: "Paediatrics", ur: "امراضِ اطفال", active: true },
-  { key: "ent", en: "ENT", ur: "کان ناک گلا", active: false },
-  { key: "dental", en: "Dental", ur: "دانتوں کا علاج", active: false },
+  { key: "ent", en: "ENT", ur: "کان ناک گلا", active: true },
+  { key: "dental", en: "Dental", ur: "دانتوں کا علاج", active: true },
 ] as const;
 
 export const DISCLAIMER_EN =

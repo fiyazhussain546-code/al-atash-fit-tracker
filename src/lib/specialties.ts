@@ -4,7 +4,7 @@
  * follow-ups, services, documents) with its own options and assessment questions.
  */
 
-export type SpecialtyKey = "eye-care" | "cardiology" | "orthopedic" | "gynecology" | "pediatrics" | "dermatology";
+export type SpecialtyKey = "eye-care" | "cardiology" | "orthopedic" | "gynecology" | "pediatrics" | "dermatology" | "ent" | "dental" | "diabetes";
 
 export interface SpecialtyQuestion {
   key: string;
