@@ -250,6 +250,29 @@ export const SPECIALTIES: Record<SpecialtyKey, SpecialtyConfig> = {
     ],
     ...disclaimer("Diabetes Care Consultancy", "ذیابیطس کیئر کنسلٹینسی", "diabetologist", "ماہرِ ذیابیطس"),
   },
+  general: {
+    key: "general",
+    en: "General Medical Consultancy",
+    ur: "جنرل میڈیکل کنسلٹینسی",
+    short: "General Medical",
+    prefix: "GM",
+    doctorWord: "doctor",
+    tagline: "Guidance for general health problems, tests, reports and the right specialist.",
+    taglineUr: "عام طبی مسائل، ٹیسٹس اور مناسب ماہر تک رسائی کے لیے رہنمائی۔",
+    caseCategories: ["Fever / Infection", "Weakness / Fatigue", "Stomach / Digestion", "Blood Pressure", "Report Review", "Second Opinion", "Surgery Advice", "Routine Check-up", "Other"],
+    specialists: ["Internal Medicine", "General Surgery", "Family Medicine", "Gastroenterology", "Pulmonology", "General Physician", "Other"],
+    packages: packages("General Medical", "جنرل میڈیکل"),
+    questions: [
+      { key: "mainComplaint", en: "Main health problem", ur: "بنیادی طبی مسئلہ", type: "textarea" },
+      { key: "duration", en: "How long has the problem lasted?", ur: "مسئلہ کب سے ہے؟", type: "text" },
+      { key: "fever", en: "Fever", ur: "بخار", type: "select", options: YN },
+      { key: "existingConditions", en: "Existing conditions (diabetes / BP / asthma etc.)", ur: "موجودہ بیماریاں (ذیابیطس / بلڈ پریشر وغیرہ)", type: "text" },
+      { key: "medications", en: "Current medicines", ur: "موجودہ ادویات", type: "textarea" },
+      { key: "reports", en: "Lab tests / reports available", ur: "لیب ٹیسٹ / رپورٹس دستیاب", type: "select", options: YN },
+      { key: "specialistNeeded", en: "Which specialist are you looking for?", ur: "کس ماہر کی تلاش ہے؟", type: "text" },
+    ],
+    ...disclaimer("General Medical Consultancy", "جنرل میڈیکل کنسلٹینسی", "doctor", "مستند ڈاکٹر"),
+  },
 };
 
 export const SPECIALTY_KEYS = Object.keys(SPECIALTIES) as SpecialtyKey[];
