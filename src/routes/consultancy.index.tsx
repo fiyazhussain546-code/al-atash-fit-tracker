@@ -73,7 +73,7 @@ function ConsultancyIndex() {
             </span>
           </Link>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            {(["cardiology", "orthopedic", "gynecology", "pediatrics", "dermatology"] as const).map((k) => {
+            {(["cardiology", "orthopedic", "gynecology", "pediatrics", "dermatology", "ent", "dental", "diabetes"] as const).map((k) => {
               const sp = SPECIALTIES[k];
               return (
                 <Link

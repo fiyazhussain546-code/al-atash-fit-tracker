@@ -19,7 +19,7 @@ async function adminGuard(t: string) {
 }
 const ADMIN_ONLY = "Only admins can do this. / یہ کام صرف ایڈمن کر سکتا ہے۔";
 
-const specialty = z.enum(["eye-care", "cardiology", "orthopedic", "gynecology", "pediatrics", "dermatology"]).default("eye-care");
+const specialty = z.enum(["eye-care", "cardiology", "orthopedic", "gynecology", "pediatrics", "dermatology", "ent", "dental", "diabetes"]).default("eye-care");
 
 const nullDate = (v: string) => (v && v.trim() ? v : null);
 
