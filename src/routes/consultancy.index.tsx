@@ -24,7 +24,6 @@ export const Route = createFileRoute("/consultancy/")({
 
 function ConsultancyIndex() {
   const eye = MEDICAL_SPECIALITIES[0];
-  const upcoming = MEDICAL_SPECIALITIES.filter((s) => !s.active);
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-brand-soft/70 via-background to-background">
@@ -94,21 +93,6 @@ function ConsultancyIndex() {
               );
             })}
           </div>
-        </section>
-
-        <section className="mt-10 rounded-2xl border bg-card p-5">
-          <h2 className="font-display text-base font-bold text-foreground">Coming soon</h2>
-          <Urdu className="block text-sm text-muted-foreground">جلد دستیاب</Urdu>
-          <ul className="mt-3 flex flex-wrap gap-2">
-            {upcoming.map((s) => (
-              <li
-                key={s.key}
-                className="rounded-full border bg-secondary px-3 py-1.5 text-xs font-medium text-muted-foreground"
-              >
-                {s.en}
-              </li>
-            ))}
-          </ul>
         </section>
 
         <section className="mt-8 flex items-start gap-3 rounded-2xl border bg-card p-5">
