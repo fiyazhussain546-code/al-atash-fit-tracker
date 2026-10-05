@@ -85,7 +85,7 @@ export const eyecareSavePatient = createServerFn({ method: "POST" })
         case_status: p.caseStatus || "New",
         ...(p.registrationDate ? { registration_date: p.registrationDate } : {}),
         notes: p.notes,
-      }, data.specialty, SPECIALTIES[data.specialty].prefix);
+      }, data.specialty, "MC");
       return { ok: true as const, error: "", id };
     } catch (err) {
       return { ok: false as const, error: err instanceof Error ? err.message : "Could not save patient.", id: "" };

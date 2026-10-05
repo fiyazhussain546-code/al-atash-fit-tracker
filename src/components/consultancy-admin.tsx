@@ -54,6 +54,7 @@ import {
   eyecareSavePatient,
   eyecareSaveRecommendation,
   eyecareSaveService,
+  eyecareDocumentUrl,
 } from "@/lib/eyecare.functions";
 
 
@@ -63,6 +64,7 @@ const useSpec = () => useContext(SpecCtx);
 const defaultSpecialist = (cfg: SpecialtyConfig) =>
   cfg.specialists.find((x) => x.startsWith("General")) ?? cfg.specialists[0]!;
 import { decodeToken, ROLE_LABEL } from "@/lib/staff";
+import { intakeQuestionsFor } from "@/lib/intake-questions";
 const today = () => new Date().toISOString().slice(0, 10);
 
 type Tab = "dashboard" | "patients" | "doctors" | "appointments" | "followups" | "payments";
@@ -103,7 +105,7 @@ function csvEscape(v: string) {
 
 export function ConsultancyAdmin({ specialty }: { specialty: SpecialtyKey }) {
   return (
-    <SpecCtx.Provider value={SPECIALTIES[specialty]}>
+    <SpecCtx.Provider value={{ ...SPECIALTIES[specialty], questions: intakeQuestionsFor(specialty) }}>
       <EyeCareAdmin />
     </SpecCtx.Provider>
   );
@@ -1067,6 +1069,7 @@ function PatientDetail({
   const saveFup = useServerFn(eyecareSaveFollowup);
   const saveSvc = useServerFn(eyecareSaveService);
   const saveDoc = useServerFn(eyecareSaveDocument);
+  const docUrl = useServerFn(eyecareDocumentUrl);
   const del = useServerFn(eyecareDelete);
 
   const [aForm, setAForm] = useState({
@@ -2038,6 +2041,20 @@ ${
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-foreground">{d.title}</p>
                       <p className="text-xs text-muted-foreground">{d.category}</p>
+                      {d.storagePath && (
+                        <button
+                          type="button"
+                          className="mr-3 text-xs font-semibold text-brand underline underline-offset-2"
+                          onClick={async () => {
+                            const res = await docUrl({ data: { token, path: d.storagePath } });
+                            if (!res.ok) return flash(res.error);
+                            window.open(res.url, "_blank", "noopener");
+                          }}
+                        >
+                          Open / download uploaded file
+                        </button>
+                      )}
+                      {d.createdAt && <p className="text-[11px] text-muted-foreground">Uploaded {d.createdAt.slice(0, 10)}</p>}
                       {d.externalLink && (
                         <a
                           href={d.externalLink}
