@@ -10,7 +10,7 @@ export interface SpecialtyQuestion {
   key: string;
   en: string;
   ur: string;
-  type: "text" | "textarea" | "select";
+  type: "text" | "textarea" | "select" | "multi";
   options?: readonly string[];
 }
 

@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { emptyEyeCareData } from "@/lib/eyecare";
-import { SPECIALTIES } from "@/lib/specialties";
 
 const token = z.string().min(1).max(500);
 const txt = (max = 2000) => z.string().max(max).default("");
@@ -85,7 +84,7 @@ export const eyecareSavePatient = createServerFn({ method: "POST" })
         case_status: p.caseStatus || "New",
         ...(p.registrationDate ? { registration_date: p.registrationDate } : {}),
         notes: p.notes,
-      }, data.specialty, SPECIALTIES[data.specialty].prefix);
+      }, data.specialty, "MC");
       return { ok: true as const, error: "", id };
     } catch (err) {
       return { ok: false as const, error: err instanceof Error ? err.message : "Could not save patient.", id: "" };
@@ -450,4 +449,16 @@ export const eyecareDelete = createServerFn({ method: "POST" })
     } catch (err) {
       return { ok: false as const, error: err instanceof Error ? err.message : "Could not delete record." };
     }
+  });
+
+export const eyecareDocumentUrl = createServerFn({ method: "POST" })
+  .inputValidator((i: unknown) => z.object({ token, path: z.string().min(1).max(300) }).parse(i))
+  .handler(async ({ data }) => {
+    if (!(await guard(data.token))) return { ok: false as const, error: "Session expired.", url: "" };
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: signed, error } = await supabaseAdmin.storage
+      .from("consultancy-documents")
+      .createSignedUrl(data.path, 300);
+    if (error || !signed) return { ok: false as const, error: error?.message ?? "Could not open file.", url: "" };
+    return { ok: true as const, error: "", url: signed.signedUrl };
   });
