@@ -1,0 +1,1 @@
+CREATE POLICY "No client access to consultancy documents" ON storage.objects AS RESTRICTIVE FOR ALL TO anon, authenticated USING (bucket_id <> 'consultancy-documents') WITH CHECK (bucket_id <> 'consultancy-documents');
