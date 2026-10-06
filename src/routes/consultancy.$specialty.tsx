@@ -47,7 +47,7 @@ function SpecialtyPublic() {
   const sp = SPECIALTIES[key];
   const msg = `Assalam o Alaikum AL-ATASH FIT — I would like ${sp.en} guidance.\n\nName:\nAge:\nCity:\nProblem:`;
   const steps = [
-    { icon: ClipboardList, en: "Share your case", ur: "اپنا کیس بتائیں", text: "Tell us the problem, previous reports and your city on WhatsApp." },
+    { icon: ClipboardList, en: "Share your case", ur: "اپنا کیس بتائیں", text: "Tell us the problem, previous reports and your city in the online form." },
     { icon: Users, en: "Suitable options", ur: "مناسب آپشنز", text: `Our team reviews your case and shares up to 3 suitable ${sp.doctorWord} options.` },
     { icon: CalendarClock, en: "Appointment & follow-up", ur: "اپائنٹمنٹ اور فالو اپ", text: "We help coordinate the appointment and stay with you through follow-up." },
   ];
@@ -70,6 +70,13 @@ function SpecialtyPublic() {
           <Urdu className="mt-3 block text-xl text-muted-foreground">{sp.ur}</Urdu>
           <p className="mx-auto mt-4 max-w-xl text-sm text-muted-foreground sm:text-base">{sp.tagline}</p>
           <Urdu className="mt-1 block text-sm text-muted-foreground">{sp.taglineUr}</Urdu>
+          <Link
+            to="/consultancy-assessment/$specialty"
+            params={{ specialty: key }}
+            className="mt-6 mr-2 inline-flex min-h-12 items-center gap-2 rounded-full bg-brand-dark px-6 text-sm font-semibold text-primary-foreground hover:bg-brand"
+          >
+            <ClipboardList className="size-4" /> Start {sp.short} Assessment / اسیسمنٹ شروع کریں
+          </Link>
           <a
             href={waLink(CLINIC_WHATSAPP, msg)}
             target="_blank"
@@ -82,12 +89,13 @@ function SpecialtyPublic() {
 
         <section className="mt-10 grid gap-4 sm:grid-cols-3">
           {steps.map((s) => (
-            <div key={s.en} className="rounded-2xl border bg-card p-5">
+            <Link key={s.en} to="/consultancy-assessment/$specialty" params={{ specialty: key }} className="rounded-2xl border bg-card p-5 transition hover:-translate-y-0.5 hover:border-brand">
               <s.icon className="size-5 text-brand" aria-hidden />
               <h2 className="mt-3 font-display text-base font-bold">{s.en}</h2>
               <Urdu className="block text-sm text-muted-foreground">{s.ur}</Urdu>
               <p className="mt-2 text-sm text-muted-foreground">{s.text}</p>
-            </div>
+              <span className="mt-3 inline-block text-xs font-semibold text-brand">Start assessment →</span>
+            </Link>
           ))}
         </section>
 
