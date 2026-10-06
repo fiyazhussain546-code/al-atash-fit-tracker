@@ -28,7 +28,7 @@ const steps = [
     icon: ClipboardList,
     en: "Share your case",
     ur: "اپنا کیس بتائیں",
-    text: "Tell us the eye problem, previous reports and your city on WhatsApp.",
+    text: "Tell us the eye problem, previous reports and your city in the online assessment form.",
   },
   {
     icon: Users,
@@ -73,6 +73,13 @@ function EyeCarePublic() {
             Guidance and coordination for eye patients — specialist selection, second opinion, appointment support and
             follow-up.
           </p>
+          <Link
+            to="/consultancy-assessment/$specialty"
+            params={{ specialty: "eye-care" }}
+            className="mt-6 mr-2 inline-flex min-h-12 items-center gap-2 rounded-full bg-brand-dark px-6 py-3 text-sm font-semibold text-primary-foreground shadow-md hover:bg-brand"
+          >
+            <ClipboardList className="size-4" aria-hidden /> Start Eye Care Assessment / اسیسمنٹ شروع کریں
+          </Link>
           <a
             href={waLink(CLINIC_WHATSAPP, msg)}
             target="_blank"
@@ -86,14 +93,15 @@ function EyeCarePublic() {
 
         <section className="mt-12 grid gap-4 sm:grid-cols-3">
           {steps.map((s) => (
-            <div key={s.en} className="rounded-2xl border bg-card p-5">
+            <Link key={s.en} to="/consultancy-assessment/$specialty" params={{ specialty: "eye-care" }} className="rounded-2xl border bg-card p-5 transition hover:-translate-y-0.5 hover:border-brand">
               <span className="grid size-11 place-items-center rounded-xl bg-brand/10 text-brand">
                 <s.icon className="size-5" aria-hidden />
               </span>
               <h2 className="mt-3 font-display text-base font-bold text-foreground">{s.en}</h2>
               <Urdu className="block text-sm text-muted-foreground">{s.ur}</Urdu>
               <p className="mt-2 text-sm text-muted-foreground">{s.text}</p>
-            </div>
+              <span className="mt-3 inline-block text-xs font-semibold text-brand">Start assessment →</span>
+            </Link>
           ))}
         </section>
 
